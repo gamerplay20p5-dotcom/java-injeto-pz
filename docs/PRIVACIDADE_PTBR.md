@@ -1,0 +1,46 @@
+# Privacidade e Limites de Segurança
+
+## Dados do Launcher
+
+| Dado | Onde fica | Retenção |
+| --- | --- | --- |
+| Caminhos PZ/Steam/mods, seleção, tema, memória e animações | `settings.json` na pasta local do aplicativo | Até o usuário remover ou alterar |
+| Origem/destino, nomes e SHA-256 dos JARs preparados | `prepared.json` | Até preparar outro perfil ou remover JARs |
+| Cópias dos agentes | `runtime/<sha256>/*.jar` | Até remover JARs |
+| SteamID público validado | RAM do processo e da interface | Até desconectar ou encerrar |
+| Estado/nonce e campos da resposta OpenID | RAM durante a solicitação | Descartados após processamento/encerramento |
+| Atividade do launcher | Até 60 eventos em RAM | Sessão atual |
+| Diagnóstico manual | Arquivo escolhido pelo usuário | Sob controle do usuário |
+
+A pasta padrão é `%APPDATA%\Java Injeto - PZ`. Electron/Chromium também pode criar caches e preferências técnicas locais. Isso não é armazenamento de senha Steam ou de perfil social.
+
+Diagnósticos exportados incluem caminhos e hashes. Um caminho pode conter o nome de usuário do Windows: revise antes de compartilhar. A exportação não inclui SteamID, senha, cookies, conversa, VOIP ou console do jogo. Não há envio automático.
+
+## Rede e Login
+
+O login abre `steamcommunity.com` no navegador padrão. O callback usa apenas `127.0.0.1`, não uma porta exposta na rede local. A confirmação de assinatura vai ao endpoint oficial Steam por HTTPS. O login necessita internet e revela à Steam os dados normais de uma conexão/autenticação, como IP; não existe anonimato perante a Steam.
+
+Não operamos backend próprio, telemetria, banco de usuários, consulta de perfil, avatar, amigos ou inventário. Não recebemos senha ou Steam Guard. Cookies de login pertencem ao navegador/Steam, não a uma WebView de login do aplicativo. O histórico do navegador, a Steam e o Windows têm políticas próprias de armazenamento; o launcher não controla esses sistemas.
+
+OpenID necessariamente retorna um identificador público e parâmetros temporários de autenticação. Assim, a descrição correta é **não persistimos dados de conta e não coletamos credenciais**, não "nenhuma informação existe em qualquer momento". Não há promessa de apagar criptograficamente RAM, pagefile ou dumps do sistema operacional.
+
+## Agentes e Mods
+
+Agentes Java executam dentro da JVM do jogo com as permissões do usuário Windows. Eles não ficam isolados no sandbox da interface Electron. SHA-256 verifica consistência, não reputação, licença ou ausência de código malicioso.
+
+Instale apenas arquivos de fontes confiáveis e confirme o autor. A verificação de Premain-Class evita confundir tipos de JAR, mas não comprova identidade do editor. O launcher não substitui antivírus ou revisão de código. Não execute como administrador.
+
+O launcher não grava voz. **Skinwalker e outros mods podem ter funcionalidades de gravação próprias**, fora deste aplicativo. Consentimento, retenção, compatibilidade e transmissão desses dados continuam sendo responsabilidade dos mods. ZombieBuddy também pode salvar seus próprios arquivos de configuração/aprovação; o launcher mantém `policy=prompt` e não burla essa etapa.
+
+## O Que Não Alteramos
+
+- JAR vanilla, JSON do PZ e opções de inicialização Steam.
+- DLLs de mods, Java global do Windows, Registro para instalar patches e classes soltas no jogo.
+- Lista de mods ativos, mapa, saves, inventário e configurações do servidor.
+- Firewall, antivírus, permissões de administrador ou memória de processos alheios.
+
+Remover o perfil limpa somente as cópias e o manifesto deste aplicativo. Não remove uma instalação Java antiga feita manualmente por outro programa. Não há garantia de que agentes combinados sejam compatíveis ou de que um mod de terceiros não possa alterar um save durante a partida.
+
+## Distribuição
+
+O executável inicial ainda não é assinado com certificado de editor. Distribua-o por um canal conhecido, publique seu hash e mantenha o código disponível para revisão. Não instrua usuários a desligar proteções do Windows. A integridade do programa distribuído também importa, não só a dos JARs selecionados.

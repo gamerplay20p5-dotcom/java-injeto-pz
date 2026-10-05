@@ -1,0 +1,35 @@
+Java Injeto - PZ 0.1.0
+
+- Launcher desktop Windows em PTBR para preparar apenas JARs de agentes Java.
+- Catálogo Skinwalker, Viewpoint e ZombieBuddy; mods completos continuam na Workshop.
+- Detecção de PZ, bibliotecas Steam e JARs por mod.info, com pastas adicionais.
+- Revisão de origem, SHA-256, premain e dependências antes da preparação.
+- Cópias locais isoladas, reaprovação após alteração de JAR e remoção sem apagar Workshop/PZ/saves.
+- Inicialização via Java do jogo sem alterar JSON vanilla, opções Steam ou instalar DLLs de mods.
+- Viewpoint carregado pelo ZombieBuddy a partir da Workshop; política de aprovação preservada.
+- Steam OpenID opcional pelo navegador; SteamID somente em RAM, sem receber senha/Steam Guard.
+- Temas claro/escuro, busca, atividade local limitada e diagnóstico somente por exportação manual.
+- Ordem canônica dos agentes protege o hook Skinwalker antes do carregamento Exposer do ZombieBuddy.
+- 38 regressões automatizadas e validações Electron/premain/pacote Windows. Partida real SP/MP e login Steam real ainda precisam de homologação.
+- Documentação completa em PTBR para uso, arquitetura, privacidade e continuação com IA.
+
+Publicação open source
+
+- Código do launcher publicado sob licença MIT, sem distribuir arquivos do PZ ou JARs dos mods.
+- README principal, imagem da interface, guia de contribuição e política de segurança.
+- CI Windows/Node 24 para testes unitários e compilação, sem credenciais ou jogo instalado.
+- Executável e SHA256SUMS.txt distribuídos separadamente do código-fonte.
+
+Avisos desta prévia
+
+- Windows x64; abra a Steam e baixe os mods pela Workshop antes de preparar o perfil.
+- Skinwalker ainda precisa de uma cópia local autorizada enquanto não houver publicação confirmada.
+- Executável ainda sem assinatura de código; não desative antivírus para contornar alertas.
+- Login Steam real, partidas SP/MP e outros computadores ainda precisam de homologação.
+- SHA-256 detecta alteração de arquivo, mas não certifica sua segurança nem a dos agentes.
+
+Verificar o arquivo baixado no PowerShell:
+Get-FileHash -Algorithm SHA256 .\Java-Injeto-PZ-0.1.0-Windows.exe
+Compare com SHA256SUMS.txt da mesma versão.
+
+Manual: https://github.com/gamerplay20p5-dotcom/java-injeto-pz#readme
