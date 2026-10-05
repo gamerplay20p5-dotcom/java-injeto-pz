@@ -1,4 +1,4 @@
-# Continuação do Projeto com IA
+# Continuidade do Desenvolvimento
 
 ## Pedido Original e Limites
 

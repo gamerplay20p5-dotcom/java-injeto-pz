@@ -95,7 +95,7 @@ docs/             Arquitetura, privacidade e orientação de continuidade
 
 - [Manual completo e problemas comuns](README_PTBR.md)
 - [Arquitetura e explicação do código](docs/ARQUITETURA_PTBR.md)
-- [Continuação com IA e próximos passos](docs/CONTINUAR_COM_IA_PTBR.md)
+- [Continuidade do desenvolvimento e próximos passos](docs/CONTINUIDADE_PTBR.md)
 - [Adicionar componentes Java](docs/NOVOS_AGENTES_PTBR.md)
 - [Como contribuir](CONTRIBUTING.md)
 - [Reportar vulnerabilidades em privado](SECURITY.md)

@@ -93,7 +93,7 @@ Feche o portátil anterior antes de recompilar para o mesmo destino. Se ele prec
 - [Como cadastrar futuros agentes](docs/NOVOS_AGENTES_PTBR.md)
 - [Privacidade e segurança](docs/PRIVACIDADE_PTBR.md)
 - [Testes e limitações](docs/TESTES_PTBR.md)
-- [Continuação do projeto com IA](docs/CONTINUAR_COM_IA_PTBR.md)
+- [Continuidade do desenvolvimento](docs/CONTINUIDADE_PTBR.md)
 - [Créditos e bibliotecas](docs/TERCEIROS_PTBR.md)
 
 Esta é uma primeira versão funcional, não uma garantia de compatibilidade universal. A preparação, interface e entrada dos agentes foram testadas; uma partida real SP/MP e o login real Steam ainda precisam de homologação antes de distribuir para toda a temporada.

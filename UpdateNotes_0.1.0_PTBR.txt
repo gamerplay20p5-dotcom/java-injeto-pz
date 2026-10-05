@@ -11,7 +11,7 @@ Java Injeto - PZ 0.1.0
 - Temas claro/escuro, busca, atividade local limitada e diagnóstico somente por exportação manual.
 - Ordem canônica dos agentes protege o hook Skinwalker antes do carregamento Exposer do ZombieBuddy.
 - 38 regressões automatizadas e validações Electron/premain/pacote Windows. Partida real SP/MP e login Steam real ainda precisam de homologação.
-- Documentação completa em PTBR para uso, arquitetura, privacidade e continuação com IA.
+- Documentação completa em PTBR para uso, arquitetura, privacidade e continuidade do desenvolvimento.
 
 Publicação open source
 
