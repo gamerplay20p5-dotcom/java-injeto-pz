@@ -2,8 +2,9 @@ const { _electron } = require('playwright');
 const asar = require('@electron/asar');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const os = require('node:os');
 const assert = require('node:assert/strict');
-const { hash } = require('../src/main/files.cjs');
+const { hash, within } = require('../src/main/files.cjs');
 const root = path.resolve(__dirname, '..');
 
 async function main() {
@@ -18,10 +19,13 @@ async function main() {
   const packagedCatalog = JSON.parse(asar.extractFile(archive, 'catalog.json').toString());
   assert.equal(packagedCatalog.mods.length, 3);
   await fs.mkdir(path.join(root, 'test-results'), { recursive: true });
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'organic-package-'));
   let app;
   try {
     const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
-    app = await _electron.launch({ executablePath: executable, args: [], env, timeout: 30000 });
+    // Perfil separado evita disputar a instancia ou ler preferencias reais.
+    app = await _electron.launch({ executablePath: executable, args: [`--user-data-dir=${temp}`], env, timeout: 30000 });
+    assert.equal(path.resolve(await app.evaluate(({ app }) => app.getPath('userData'))), path.resolve(temp));
     const page = await app.firstWindow();
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.getByRole('heading', { name: 'Seu Java, no lugar certo.' }).waitFor();
@@ -34,7 +38,13 @@ async function main() {
     await page.screenshot({ path: path.join(root, 'test-results/empacotado.png'), fullPage: true });
     assert.deepEqual(errors, []);
     // Apenas leitura e abertura da janela: nao altera preferencias nem prepara/inicia Java.
-  } finally { if (app) await app.close(); }
+  } finally {
+    try { if (app) await app.close(); }
+    finally {
+      assert(within(os.tmpdir(), temp) && path.basename(temp).startsWith('organic-package-'));
+      await fs.rm(temp, { recursive: true, force: true });
+    }
+  }
   const stats = await fs.stat(portable);
   assert(stats.size > 10 * 1024 * 1024);
   await fs.writeFile(path.join(release, 'SHA256SUMS.txt'), `${await hash(portable)}  ${path.basename(portable)}\n`);

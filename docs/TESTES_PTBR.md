@@ -13,7 +13,7 @@ Ambiente: Windows, instalação local PZ B42.21, Java fornecido pelo jogo e JARs
 | Aplicativo Windows empacotado | Janela/IPC reais, isolamento ativo e pacote sem arquivos de mods |
 | `npm install` / auditoria inicial | Nenhuma vulnerabilidade conhecida reportada pelo npm na execução |
 
-As cópias dos testes são criadas em pastas temporárias próprias e removidas ao terminar. Os testes de preparação preservam os arquivos de origem e removem apenas runtime. As screenshots ficam em `test-results`, fora da distribuição.
+As cópias dos testes são criadas em pastas temporárias próprias e removidas ao terminar. Os testes de preparação preservam os arquivos de origem e removem apenas runtime. A validação do pacote usa `--user-data-dir` temporário e verifica o isolamento antes de acessar a interface, sem disputar a instância aberta ou ler o perfil real. As screenshots ficam em `test-results`, fora da distribuição.
 
 ## Cobertura
 
