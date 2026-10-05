@@ -1,108 +1,88 @@
 # Java Injeto - PZ
 
-**Launcher desktop open source, em português brasileiro, para iniciar o Project Zomboid com agentes Java sem instalar arquivos manualmente na pasta do jogo.** Projeto independente da Organic / DuckStudio, com referência inicial na B42.21 e suporte atual a Windows x64.
+Utilitário desktop da Organic / DuckStudio para **revisar JARs, configurar agentes Java com backup e restaurar a instalação do cliente PZ**. Interface compacta em português brasileiro, identidade Duck em grafite e âmbar, Windows x64 e referência B42.21.
 
-[Baixar versão de testes](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/tag/v0.1.0) · [Manual PTBR](README_PTBR.md) · [Reportar problema](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/issues) · [Licença MIT](LICENSE)
+**Não abre o Project Zomboid. Não é um launcher de jogo.** Os mods completos continuam sendo baixados pela Workshop. O Otimizador configura ajustes e pode aguardar o jogo em segundo plano; quem abre o jogo é o usuário, pela Steam.
 
-![Biblioteca Java do launcher, com Skinwalker, Viewpoint e ZombieBuddy](docs/images/launcher.png)
+[Manual PTBR](README_PTBR.md) | [Otimizador](docs/OTIMIZADOR_PTBR.md) | [Código no GitHub](https://github.com/gamerplay20p5-dotcom/java-injeto-pz) | [Licença MIT](LICENSE)
 
-## O Que Ele Faz
+![Interface compacta do Java Injeto com dados de teste](docs/images/launcher.png)
 
-- Localiza o PZ, bibliotecas Steam e componentes Java já instalados.
-- Mostra origem, dependências e SHA-256 antes de pedir autorização para preparar os agentes.
-- Mantém cópias dos agentes em uma pasta própria e inicia o cliente usando o Java que acompanha o PZ.
-- Exige nova revisão quando um JAR muda e permite remover apenas as cópias feitas pelo launcher.
-- Oferece temas claro/escuro, configurações locais e login Steam opcional pelo navegador.
+## Fluxo de Uso
 
-**Os mods completos continuam sendo baixados pela Workshop.** O repositório e o executável não incluem JARs, Lua, mapas, modelos, texturas ou DLLs de mods. Não substituímos arquivos vanilla, opções de inicialização Steam ou saves. O launcher não injeta em um processo já aberto: inicia uma nova JVM com `-javaagent`.
+1. Instale os mods pela Workshop e feche o PZ.
+2. Abra `Java Injeto.exe` ou o atalho da área de trabalho.
+3. Use **Verificar pastas**. Em **Configurações**, selecione manualmente o jogo, a Steam ou pastas adicionais de mods quando necessário.
+4. Selecione componentes, use **Revisar JAR**, confira origem, SHA-256 e manifesto, e autorize a preparação.
+5. Clique em **Injetar agora**. Confira destinos e backup antes de confirmar.
+6. Feche o utilitário e abra o PZ normalmente pela Steam. A injeção permanece configurada sem manter a interface aberta.
+7. Para reverter, feche o jogo e use **Backup > Restaurar backup**.
 
-## Usar Sem Programar
+A revisão não executa o JAR. Um hash detecta alterações, mas **não certifica segurança**. Agentes têm as permissões do usuário Windows. A presença de arquivos de assinatura é exibida sem alegar verificação criptográfica.
 
-1. Baixe os mods e suas dependências pela Workshop. Skinwalker ainda exige uma cópia local autorizada enquanto não houver publicação confirmada.
-2. Abra a Steam, feche o PZ e baixe `Java-Injeto-PZ-0.1.0-Windows.exe` nos [arquivos da versão](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/tag/v0.1.0).
-3. Abra o launcher e clique em **Buscar arquivos**. Se necessário, selecione a instalação do PZ nas Configurações.
-4. Selecione os componentes, clique em **Revisar e preparar**, confira os arquivos e autorize.
-5. Use **Iniciar PZ** no launcher. Ative os mods normalmente dentro do jogo ou conecte ao servidor que os exige.
+## O Que É Alterado
 
-Não precisa instalar Node.js para usar o executável. O botão Jogar da Steam e os atalhos antigos não recebem o perfil deste launcher. Para deixar de usar o perfil, feche o jogo e volte à inicialização vanilla; instalações manuais antigas não são desfeitas automaticamente.
+- Agentes aprovados recebem cópias isoladas em `%APPDATA%\Java Injeto - PZ\runtime\<SHA-256>\`.
+- A ativação usa `-javaagent` no **`ProjectZomboid64.json`**, após backup integral do original e confirmação.
+- `projectzomboid.jar`, Java bundled, DLLs, saves e arquivos dos mods não são substituídos.
+- Não existe injeção em processo aberto nem instalação de `.class` avulsas. Processos do jogo detectados bloqueiam escrita e restauração.
+- Alterações externas no JSON e backups adulterados bloqueiam restauração automática, em vez de sobrescrever mudanças.
 
-**Versão inicial de testes:** o executável ainda não tem assinatura de código. Não desative antivírus para executá-lo. Confira procedência e `SHA256SUMS.txt`; um hash identifica o arquivo, mas não garante que ele seja seguro. Login Steam real e partidas SP/MP ainda precisam de homologação.
+`media/java` é a origem de alguns mods, **não um destino universal de instalação**. Os destinos reais são mostrados na revisão.
 
-## Componentes Disponíveis
-
-| Componente | Como o launcher trata | Dependência |
+| Componente | Tratamento | Dependência |
 | --- | --- | --- |
-| Skinwalker | Prepara `SkinwalkerAgent.jar` como agente independente | Nenhuma |
-| [Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528) | Mantém o JAR na Workshop para o framework carregar | ZombieBuddy |
-| [ZombieBuddy](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853) | Prepara `ZombieBuddy.jar` com aprovação `policy=prompt` | Nenhuma |
+| Skinwalker | Cópia de `SkinwalkerAgent.jar`, ativada como agente | Nenhuma |
+| [Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528) | JAR permanece na Workshop; carregamento pelo framework | ZombieBuddy |
+| [ZombieBuddy](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853) | Cópia de `ZombieBuddy.jar`, com `policy=prompt` | Nenhuma |
 
-`Viewpoint.jar` **não** pode ser usado diretamente como `-javaagent`. Suas assinaturas e estrutura original permanecem na Workshop. Na combinação atual, Skinwalker entra antes de ZombieBuddy, independentemente da ordem dos cliques.
+Viewpoint não é um agente independente. Skinwalker entra antes de ZombieBuddy, independentemente da ordem dos cliques. Arquivos de mods não acompanham o código ou o executável.
 
-O catálogo não é um instalador universal para qualquer JAR. Novos componentes precisam de análise e configuração: [como cadastrar agentes](docs/NOVOS_AGENTES_PTBR.md).
+## Otimizador
 
-## Privacidade e Segurança
+Detecção nativa de CPU, GPU, RAM e discos; perfis Equilibrado, Desempenho e Econômico; recomendação automática de memória Java; preservação do coletor vanilla; prioridade opcional, plano de energia temporário, monitoramento de RAM e fechamento seletivo de aplicativos com confirmação.
 
-Não há telemetria, backend próprio, upload automático de logs ou gravação de voz pelo launcher. Preferências, caminhos e hashes ficam no computador. A exportação de diagnóstico é manual e pode conter o nome do usuário Windows nos caminhos: revise antes de compartilhar.
+O auxiliar é escrito em **C#**, sem janela de CMD. Ao fechar a interface, Electron encerra. Somente o auxiliar nativo continua, se uma sessão tiver sido explicitamente ativada. Ele aguarda o PZ, aplica opções selecionadas e restaura ao encerrar. Não purga memória do jogo nem força o encerramento de outros aplicativos.
 
-O login Steam é opcional, abre o navegador oficial e mantém o SteamID apenas na memória da sessão. O aplicativo não pede senha, Steam Guard, chave de API, amigos ou biblioteca. Esse login não confirma propriedade do jogo e não controla acesso ao servidor.
+Ganhos dependem do hardware e da carga. Não é um patch do motor Java nem uma garantia de mais FPS. [Configurações, limites e recuperação](docs/OTIMIZADOR_PTBR.md).
 
-Agentes Java executam com as permissões do usuário: **use apenas fontes confiáveis**. O launcher não isola nem certifica o código dos mods. Recursos de voz ou coleta de dados dos próprios mods não pertencem a este aplicativo. Consulte [Privacidade](docs/PRIVACIDADE_PTBR.md) e [Segurança](SECURITY.md).
+## Compilar
 
-## Compilar o Código
-
-Use Windows x64, Node.js 24 e npm. Para rodar testes unitários ou compilar a interface não é necessário instalar PZ ou ter uma conta Steam.
+Windows 10/11 x64, Node.js 24, npm e compilador C# do .NET Framework. O executável final não exige Node.js no computador do usuário.
 
 ```powershell
-git clone https://github.com/gamerplay20p5-dotcom/java-injeto-pz.git
-cd java-injeto-pz
 npm ci
 npm test
-npm run build
 npm start
-```
-
-Para gerar a distribuição Windows:
-
-```powershell
 npm run dist
+npm run test:package
 ```
 
-O portátil fica em `release/`. `npm run pack` gera a pasta `release/win-unpacked`. O código não contém os JARs dos mods: instale-os separadamente para testar a integração. `npm run dev` é apenas uma prévia visual no navegador, sem operações nativas.
+`npm start` compila o auxiliar e a interface. O portátil fica em `release/Java-Injeto-PZ-0.2.0-Windows.exe`; uma cópia estável chamada `Java Injeto.exe` pode ser mantida na raiz para facilitar o atalho. O botão **Localizar executável** abre sua pasta, e **Criar atalho** usa o ícone Duck incorporado no arquivo.
 
-## Testes e Organização
+A versão `0.2.0` é o utilitário desta árvore de código. A antiga `0.1.0` publicada era um launcher e tem outro funcionamento. Consulte as [releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases) para conferir o que efetivamente foi publicado. O executável não tem certificado de assinatura: não desative antivírus; confira procedência e `SHA256SUMS.txt`.
 
-| Comando | Escopo | Requisitos adicionais |
-| --- | --- | --- |
-| `npm test` | 38 regressões de catálogo, arquivos, perfil e OpenID com resposta Steam simulada | Nenhum jogo ou credencial |
-| `npm run build` | Compilação React/Vite | Nenhum jogo |
-| `npm run test:ui` | Electron real, descoberta, revisão e preparação sem abrir o jogo | PZ e componentes locais do catálogo |
-| `npm run test:agents` | Entrada dos agentes na JVM, usando apenas `java -version` | PZ, Skinwalker e ZombieBuddy locais |
-| `npm run test:package` | Interface empacotada, isolamento, licença e hash do portátil | `npm run dist`, PZ local |
+## Testes e Documentação
 
-O CI verifica os testes unitários e a compilação no Windows. **Não valida uma partida**, VOIP ou sincronização MP; os testes de integração dependem de instalações locais e não rodam no CI. Veja [resultados e roteiro manual](docs/TESTES_PTBR.md).
+| Comando | Cobertura |
+| --- | --- |
+| `npm test` | 49 regressões, incluindo injeção/restauração e auxiliar C#; energia testada com executor simulado |
+| `npm run test:ui` | Electron real, sete abas, preparação/injeção/backup em instalação fictícia, hardware, temas e dimensões compactas |
+| `npm run test:package` | Pacote Windows, recursos Duck, auxiliar C#, IPC, isolamento e hash do portátil |
+| `node tools/verify-portable.cjs` | Abertura/encerramento do portátil real com perfil fictício e detecção C# |
+| `npm run test:agents` | Agentes reais e Java do PZ em probe `-version`; não abre uma partida |
 
-```text
-src/main/          Descoberta, validação de JAR, perfis, Steam e execução
-src/preload.cjs    Ponte restrita entre interface e sistema
-src/renderer/     Interface PTBR em React
-catalog.json      Componentes conhecidos e dependências
-tests/            Regressões sem arquivos de mods
-tools/            Validações locais de interface, agentes e pacote
-docs/             Arquitetura, privacidade e orientação de continuidade
-```
+Testes automatizados não homologam uma partida SP/MP, VOIP, anticheat ou ganhos de FPS.
 
-## Documentação e Contribuições
-
-- [Manual completo e problemas comuns](README_PTBR.md)
 - [Arquitetura e explicação do código](docs/ARQUITETURA_PTBR.md)
-- [Continuidade do desenvolvimento e próximos passos](docs/CONTINUIDADE_PTBR.md)
-- [Adicionar componentes Java](docs/NOVOS_AGENTES_PTBR.md)
-- [Como contribuir](CONTRIBUTING.md)
-- [Reportar vulnerabilidades em privado](SECURITY.md)
-- [Créditos e dependências](docs/TERCEIROS_PTBR.md)
+- [Continuidade e próximos passos](docs/CONTINUIDADE_PTBR.md)
+- [Cadastro de futuros agentes](docs/NOVOS_AGENTES_PTBR.md)
+- [Privacidade](docs/PRIVACIDADE_PTBR.md), [Segurança](SECURITY.md) e [Como contribuir](CONTRIBUTING.md)
+- [Resultados e roteiro manual](docs/TESTES_PTBR.md)
+- [Bibliotecas e créditos](docs/TERCEIROS_PTBR.md)
 
-## Licença e Créditos
+## Privacidade e Créditos
 
-O código deste launcher é distribuído sob a [licença MIT](LICENSE), permitindo uso, estudo, modificações e redistribuição com preservação do aviso de licença. Mods e bibliotecas de terceiros mantêm suas próprias licenças; MIT não autoriza redistribuir arquivos de mods ou do PZ.
+Sem telemetria, backend, upload automático, gravação de voz pelo utilitário ou armazenamento de credenciais. Login Steam opcional no navegador oficial; SteamID somente na memória da sessão. Caminhos e hashes são locais. Diagnósticos exportados manualmente podem conter diretórios pessoais.
 
-Project Zomboid pertence à The Indie Stone; Steam pertence à Valve. ZombieBuddy é desenvolvido por zed-0xff e colaboradores; Viewpoint pertence aos autores da publicação original. Este projeto não é oficial nem afiliado a essas equipes.
+Código próprio sob MIT. Mods de terceiros mantêm suas licenças. Project Zomboid: The Indie Stone; Steam: Valve; ZombieBuddy: zed-0xff e colaboradores; Viewpoint: autores da publicação original. Projeto independente, sem afiliação oficial.

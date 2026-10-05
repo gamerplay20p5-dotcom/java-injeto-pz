@@ -19,7 +19,10 @@ async function inspectJar(file, expectedPremain) {
   const premain = manifest['premain-class'] || null;
   if (expectedPremain && premain !== expectedPremain) throw new Error('Este JAR n\u00e3o corresponde ao agente esperado no cat\u00e1logo.');
   if (premain && !zip.getEntry(premain.replaceAll('.', '/') + '.class')) throw new Error('Classe de entrada do agente ausente.');
-  return { source, size: stat.size, hash: await hash(source), premain };
+  const signaturePresent = zip.getEntries().some(item => /^META-INF\/[^/]+\.(SF|RSA|DSA|EC)$/i.test(item.entryName));
+  return { source, size: stat.size, hash: await hash(source), premain,
+    version: manifest['implementation-version'] || manifest['bundle-version'] || null,
+    manifest: true, signature: signaturePresent ? 'Presente; nao verificada' : 'Nao verificada', risk: 'Codigo nativo / acesso do usuario' };
 }
 
 module.exports = { inspectJar };

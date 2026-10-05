@@ -33,6 +33,8 @@ Para distribuição pública, mantenha os avisos de licença Electron/Chromium e
 - [Segurança Electron](https://www.electronjs.org/docs/latest/tutorial/security)
 - [Protocolo local Electron](https://www.electronjs.org/docs/latest/api/protocol)
 - [Documentação Java: agentes de instrumentação](https://docs.oracle.com/en/java/javase/25/docs/api/java.instrument/java/lang/instrument/package-summary.html)
+- [JDK 25: ZGC e SoftMaxHeapSize](https://docs.oracle.com/en/java/javase/25/gctuning/hotspot-virtual-machine-garbage-collection-tuning-guide.pdf)
+- [Windows: comandos powercfg](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options)
 
 Foi usada a estrutura e documentação local dos mods para identificar seus caminhos e requisitos. Não afirmamos que a estratégia de launcher altere regras, licença ou suporte oficial de cada mod.
 

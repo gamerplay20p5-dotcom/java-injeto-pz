@@ -1,8 +1,8 @@
 {
   "name": "java-injeto-pz",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Launcher desktop PTBR para agentes Java do Project Zomboid, sem distribuir mods da Workshop.",
+  "description": "Utilitario desktop PTBR para injecao reversivel de agentes Java e otimizacao do Project Zomboid, sem abrir o jogo.",
   "author": "Organic",
   "license": "MIT",
   "homepage": "https://github.com/gamerplay20p5-dotcom/java-injeto-pz#readme",
@@ -15,13 +15,15 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5178 --strictPort",
     "build": "vite build",
-    "start": "npm run build && electron .",
+    "build:native": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-native.ps1",
+    "build:brand": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/prepare-brand.ps1",
+    "start": "npm run build:native && npm run build && electron .",
     "test": "node --test tests/*.test.cjs",
     "test:ui": "node tools/verify-ui.cjs",
     "test:agents": "node tools/verify-agents.cjs",
     "test:package": "node tools/verify-package.cjs",
-    "pack": "npm run build && electron-builder --win dir",
-    "dist": "npm run build && electron-builder --win portable"
+    "pack": "npm run build:native && npm run build && electron-builder --win dir",
+    "dist": "npm run build:native && npm run build && electron-builder --win portable"
   },
   "dependencies": {
     "adm-zip": "0.6.1",
@@ -42,9 +44,10 @@
     "productName": "Java Injeto - PZ",
     "artifactName": "Java-Injeto-PZ-${version}-Windows.${ext}",
     "directories": { "output": "release" },
-    "files": ["dist/**", "src/main/**", "src/preload.cjs", "catalog.json", "package.json", "LICENSE", "docs/TERCEIROS_PTBR.md"],
+    "files": ["dist/**", "src/main/**", "src/preload.cjs", "catalog.json", "package.json", "LICENSE", "docs/TERCEIROS_PTBR.md", "assets/**"],
+    "extraResources": [{ "from": "native/bin/OrganicHelper.exe", "to": "native/OrganicHelper.exe" }],
     "asar": true,
-    "win": { "target": "portable", "signAndEditExecutable": false },
+    "win": { "target": "portable", "icon": "assets/app.ico", "signExecutable": false },
     "portable": { "requestExecutionLevel": "user" }
   }
 }

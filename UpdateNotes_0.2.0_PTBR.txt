@@ -1,0 +1,18 @@
+Java Injeto 0.2.0 - Utilitario Duck e Otimizador
+
+- Redesign compacto em grafite/amarelo; sete abas e identidade Duck.
+- Mantidos descoberta, validacao JAR, hashes, dependencias, copias e OpenID.
+- Removidos todos os comandos de abertura do jogo da interface e IPC.
+- Ativacao reversivel via ProjectZomboid64.json, backup integral e escrita atomica.
+- Protecoes para jogo aberto, mudancas externas, token expirado e backup adulterado.
+- Destinos reais, manifesto, versao e assinatura sem alegacao falsa de certificacao.
+- Otimizador C#: CPU/GPU/RAM/discos, perfis, heap recomendado e JVM revisavel.
+- Prioridade e energia temporaria opcionais; plano original nunca editado.
+- Monitor sem CMD, independente da janela Electron, com estado limitado e restauracao.
+- Fechamento seletivo normal de aplicativos, somente com confirmacao; sem kill ou purga RAM.
+- Icone Duck no executavel, criacao de atalho e botao para localizar o arquivo.
+- Manual, arquitetura, privacidade, testes e continuidade atualizados em PTBR.
+- 49 regressoes; quatro cenarios de energia C# simulados; teste UI com instalacao ficticia.
+- Homologacao de partidas SP/MP e benchmarks de FPS ainda pendentes.
+
+Nao inclui arquivos dos mods. Viewpoint permanece na Workshop, com ZombieBuddy policy=prompt.

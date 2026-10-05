@@ -1,23 +1,24 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, protocol, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, protocol, session, clipboard, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const { spawn } = require('node:child_process');
 const { validateCatalog } = require('./catalog.cjs');
 const catalog = validateCatalog(require('../../catalog.json'));
 const { Profiles, dependencies } = require('./profile.cjs');
 const { discover } = require('./discovery.cjs');
 const { inspectJar } = require('./jar.cjs');
-const { within } = require('./files.cjs');
+const { within, exists } = require('./files.cjs');
 const { SteamAuth } = require('./steam-auth.cjs');
+const { Injection } = require('./injection.cjs');
+const { NativeOptimizer, recommendedHeap } = require('./optimizer.cjs');
 
 app.setName('Java Injeto - PZ');
 if (!app.isPackaged && process.env.ORGANIC_TEST_DATA) app.setPath('userData', path.resolve(process.env.ORGANIC_TEST_DATA));
 protocol.registerSchemesAsPrivileged([{ scheme: 'organic', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const origin = 'organic://launcher';
-let window, profiles, settings, discovery, auth, currentJob = null, pendingLaunch = null, child = null;
-let progress = '', lastExit = null;
+let window, profiles, settings, discovery, auth, injection, optimizer, hardware = null, currentJob = null;
+let progress = '';
 const history = [];
 
 function note(message, type = 'info') {
@@ -30,24 +31,30 @@ async function state() {
   let prepared = null, profileError = null;
   try { prepared = await profiles.manifest(); }
   catch (error) { profileError = error.message; }
+  let injected = { status: 'none' };
+  try { injected = await injection.status(); } catch (error) { injected = { status: 'error', error: error.message }; }
   const ids = dependencies(settings.selected, catalog);
   const mods = (discovery?.mods || catalog.map(mod => ({ ...mod, source: null, status: 'missing' }))).map(mod => {
     const previous = prepared?.mods.find(item => item.id === mod.id);
     const isPrepared = previous && previous.hash === mod.hash && previous.source === mod.source;
     return { ...mod, selected: ids.includes(mod.id), automatic: ids.includes(mod.id) && !settings.selected.includes(mod.id),
+      installed: previous?.installed || null,
       status: mod.error ? 'invalid' : !mod.source ? 'missing' : isPrepared ? 'ready' : previous ? 'changed' : 'found' };
   });
+  const workshopPaths = (discovery?.libraries || []).map(lib => path.join(lib, 'steamapps/workshop/content/108600'));
+  let workshopPath = null;
+  for (const candidate of workshopPaths) if (await exists(candidate)) { workshopPath = candidate; break; }
   return { version: app.getVersion(), settings, game: discovery?.gamePath ? { path: discovery.gamePath, java: path.join(discovery.gamePath, 'jre64/bin/java.exe') } : null,
-    libraries: discovery?.libraries || [], mods, busy: currentJob, progress, auth: auth.state, history,
+    libraries: discovery?.libraries || [], workshopPath, mods, busy: currentJob, progress, auth: auth.state, history,
     runtimePath: path.join(app.getPath('userData'), 'runtime'), physicalMemoryGb: Math.round(os.totalmem() / 1024 ** 3),
-    running: Boolean(child), lastExit, platform: process.platform, profileError };
+    platform: process.platform, profileError, injection: injected, hardware,
+    optimizer: await optimizer.status(), recommendedGb: recommendedHeap(hardware, settings.optimizer.profile) };
 }
 
 async function emit() { if (window && !window.isDestroyed()) window.webContents.send('organic:state', await state()); }
 
 async function exclusive(name, work) {
   if (currentJob) throw new Error('Aguarde a opera\u00e7\u00e3o atual terminar.');
-  if (child && ['prepare', 'remove'].includes(name)) throw new Error('Feche o jogo antes de alterar os agentes.');
   currentJob = name; await emit();
   try { return await work(); }
   finally { currentJob = null; progress = ''; await emit(); }
@@ -60,7 +67,7 @@ async function scan() {
     try { Object.assign(mod, await inspectJar(mod.source, mod.kind === 'agent' ? mod.premain : null)); }
     catch (error) { mod.error = error.message; }
   }
-  pendingLaunch = null;
+  injection.preview = null;
   note(discovery.gamePath ? 'Cliente PZ localizado; busca de JARs conclu\u00edda.' : 'PZ n\u00e3o localizado. Selecione a pasta do jogo nas configura\u00e7\u00f5es.', discovery.gamePath ? 'success' : 'warning');
   return state();
 }
@@ -80,6 +87,8 @@ function handler(name, work) {
 async function setup() {
   profiles = new Profiles(app.getPath('userData'), catalog);
   settings = await profiles.load();
+  injection = new Injection(app.getPath('userData'));
+  optimizer = new NativeOptimizer(app.isPackaged ? path.join(process.resourcesPath, 'native/OrganicHelper.exe') : path.join(app.getAppPath(), 'native/bin/OrganicHelper.exe'), app.getPath('userData'));
   auth = new SteamAuth(url => shell.openExternal(url), () => void emit());
   const dist = path.join(app.getAppPath(), 'dist');
   protocol.handle('organic', async request => {
@@ -93,8 +102,11 @@ async function setup() {
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
-  window = new BrowserWindow({ width: 1240, height: 850, minWidth: 820, minHeight: 640, title: 'Java Injeto - PZ',
-    backgroundColor: '#101413', autoHideMenuBar: true,
+  const area = screen.getPrimaryDisplay().workAreaSize;
+  const width = Math.min(1050, area.width), height = Math.min(740, area.height);
+  window = new BrowserWindow({ width, height, minWidth: Math.min(760, width), minHeight: Math.min(580, height), title: 'Java Injeto',
+    icon: path.join(app.getAppPath(), 'assets/Logo_Organic.png'),
+    backgroundColor: '#131416', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, '../preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`${origin}/`)) event.preventDefault(); });
@@ -102,7 +114,11 @@ async function setup() {
 
   handler('getState', state);
   handler('scan', () => exclusive('scan', scan));
-  handler('saveSettings', value => exclusive('settings', async () => { settings = await profiles.save(value); pendingLaunch = null; return scan(); }));
+  handler('saveSettings', value => exclusive('settings', async () => {
+    const previous = settings; settings = await profiles.save(value); injection.preview = null;
+    const changed = ['gamePath', 'steamPath', 'modRoots', 'overrides'].some(key => JSON.stringify(previous[key]) !== JSON.stringify(settings[key]));
+    return changed ? scan() : state();
+  }));
   handler('chooseFolder', async kind => {
     if (!['game', 'steam', 'mods'].includes(kind)) throw new Error('Tipo de pasta desconhecido.');
     const result = await dialog.showOpenDialog(window, { title: 'Selecionar pasta', properties: ['openDirectory'] });
@@ -123,33 +139,50 @@ async function setup() {
     const result = await profiles.apply(token, settings); note(`${result.count} agente(s) JAR preparado(s). Arquivos do jogo preservados.`, 'success');
     return result;
   }));
-  handler('remove', () => exclusive('remove', async () => { await profiles.remove(); pendingLaunch = null; note('C\u00f3pias JAR removidas. Workshop e jogo preservados.', 'success'); }));
-  handler('launchPlan', () => exclusive('review-launch', async () => {
-    await scan();
-    const plan = await profiles.launchPlan(settings, discovery);
-    const token = crypto.randomUUID(); pendingLaunch = { token, plan, expires: Date.now() + 120000 };
-    return { ...plan, token };
+  async function gameClosed(root = discovery?.gamePath) {
+    if (!root) throw new Error('Selecione a instalacao do PZ.');
+    if (await optimizer.running(root)) throw new Error('Feche o PZ antes de injetar ou restaurar arquivos.');
+  }
+  handler('remove', () => exclusive('remove', async () => {
+    if (!['none', 'restored'].includes((await injection.status()).status)) throw new Error('Restaure o backup antes de remover os JARs referenciados pelo jogo.');
+    await profiles.remove(); note('Copias JAR removidas. Workshop preservada.', 'success');
   }));
-  handler('launch', token => exclusive('launch', async () => {
-    if (process.platform !== 'win32') throw new Error('Este prot\u00f3tipo executa o cliente Windows.');
-    if (child || !pendingLaunch || token !== pendingLaunch.token || Date.now() > pendingLaunch.expires) throw new Error('Revise a inicializa\u00e7\u00e3o novamente.');
-    const expected = pendingLaunch.plan; pendingLaunch = null;
+  handler('reviewInjection', () => exclusive('review-injection', async () => {
+    await gameClosed();
+    if (settings.optimizer.memoryAuto && !hardware) hardware = await optimizer.detect();
     const plan = await profiles.launchPlan(settings, discovery);
-    if (JSON.stringify(plan) !== JSON.stringify(expected)) throw new Error('O plano mudou. Revise antes de iniciar.');
-    const env = { ...process.env };
-    delete env.JAVA_TOOL_OPTIONS; delete env.JDK_JAVA_OPTIONS; delete env._JAVA_OPTIONS;
-    env.PATH = `${path.join(plan.cwd, 'jre64/bin')};${path.join(plan.cwd, 'win64')};${env.PATH || ''}`;
-    // Sem shell: caminhos com espa\u00e7os n\u00e3o viram comandos. Sa\u00edda do jogo n\u00e3o \u00e9 coletada.
-    const processChild = spawn(plan.executable, plan.args, { cwd: plan.cwd, env, shell: false, windowsHide: true, stdio: 'ignore' });
-    child = processChild;
-    await new Promise((resolve, reject) => {
-      processChild.once('spawn', resolve);
-      processChild.once('error', error => { child = null; reject(new Error(`N\u00e3o foi poss\u00edvel iniciar o Java: ${error.code || 'falha'}.`)); });
-    });
-    note('Processo Java iniciado. Abertura e compatibilidade no jogo ainda dependem dos mods.', 'success');
-    processChild.once('exit', code => { if (child === processChild) child = null; lastExit = code; note(`O PZ encerrou com c\u00f3digo ${code}.`, code ? 'warning' : 'info'); void emit(); });
-    return { pid: processChild.pid };
+    const manifest = await profiles.manifest();
+    const ids = dependencies(settings.selected, catalog);
+    return injection.review(plan.cwd, ids.map(id => manifest.mods.find(mod => mod.id === id)), settings, hardware);
   }));
+  handler('inject', token => exclusive('inject', async () => {
+    await gameClosed(); await profiles.launchPlan(settings, discovery);
+    const result = await injection.apply(token); note('Java posicionado com sucesso. JSON configurado e backup preservado.', 'success'); return result;
+  }));
+  handler('restore', () => exclusive('restore', async () => {
+    const receipt = await injection.receipt(); await gameClosed(receipt?.gamePath);
+    const result = await injection.restore(); note('Backup restaurado. O jogo nao foi iniciado.', 'success'); return result;
+  }));
+  handler('hardware', () => exclusive('hardware', async () => { hardware = await optimizer.detect(); return hardware; }));
+  handler('startOptimizer', () => exclusive('optimizer', async () => {
+    if (!discovery?.gamePath) throw new Error('Selecione o PZ antes de configurar a sessao.');
+    const result = await optimizer.start(discovery.gamePath, settings.optimizer); note('Otimizador aguardando o jogo. Nenhum jogo sera aberto.', 'success'); return result;
+  }));
+  handler('stopOptimizer', () => exclusive('optimizer-stop', async () => { const result = await optimizer.stop(); note('Restauracao da sessao solicitada.', 'success'); return result; }));
+  handler('backgroundProcesses', () => optimizer.processes());
+  handler('closeBackground', value => optimizer.close(value));
+  handler('copyText', value => {
+    if (typeof value !== 'string' || value.length > 4096 || value.includes('\0')) throw new Error('Texto invalido.');
+    clipboard.writeText(value); return true;
+  });
+  handler('createShortcut', async () => {
+    if (!app.isPackaged) throw new Error('Crie o atalho usando o executavel empacotado.');
+    const executable = process.env.PORTABLE_EXECUTABLE_FILE || app.getPath('exe');
+    const link = path.join(app.getPath('desktop'), 'Java Injeto.lnk');
+    const success = shell.writeShortcutLink(link, 'create', { target: executable, cwd: path.dirname(executable), icon: executable, iconIndex: 0, description: 'Java Injeto - Injector Utility' });
+    if (!success) throw new Error('Windows nao conseguiu criar o atalho.');
+    note('Atalho Java Injeto criado na area de trabalho.', 'success'); await emit(); return { path: link };
+  });
   handler('login', () => auth.start());
   handler('logout', () => auth.logout());
   handler('openWorkshop', async id => {
@@ -158,7 +191,7 @@ async function setup() {
     await shell.openExternal(`https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.workshopId}`);
   });
   handler('openFolder', async key => {
-    const targets = { game: discovery?.gamePath, runtime: app.getPath('userData') };
+    const targets = { game: discovery?.gamePath, runtime: app.getPath('userData'), workshop: (await state()).workshopPath || settings.modRoots[0], backups: path.join(app.getPath('userData'), 'backups'), executable: path.dirname(process.env.PORTABLE_EXECUTABLE_FILE || app.getPath('exe')) };
     for (const mod of discovery?.mods || []) if (mod.source) targets[mod.id] = path.dirname(mod.source);
     if (!targets[key]) throw new Error('Pasta n\u00e3o dispon\u00edvel.');
     const error = await shell.openPath(targets[key]); if (error) throw new Error('N\u00e3o foi poss\u00edvel abrir a pasta.');
@@ -171,6 +204,8 @@ async function setup() {
       mods: (discovery?.mods || []).map(({ id, hash, source, error }) => ({ id, hash, source, error })), history }, null, 2));
   });
   await window.loadURL(`${origin}/index.html`);
+  const refresh = setInterval(() => { if (window && !window.isDestroyed() && window.isVisible()) void emit(); }, 10000);
+  refresh.unref();
   void exclusive('scan', scan).catch(error => { note(error.message, 'error'); void emit(); });
 }
 

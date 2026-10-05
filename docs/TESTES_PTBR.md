@@ -1,57 +1,42 @@
 # Testes e Limitações
 
-## Executados em 2026-10-05
+## Validação da 0.2.0
 
-Ambiente: Windows, instalação local PZ B42.21, Java fornecido pelo jogo e JARs presentes na máquina. Não houve partida iniciada, login real ou acesso a um servidor de produção durante a validação.
+Ambiente de desenvolvimento Windows, 2026-10-05. Nenhuma partida ou login real foi aberto para executar os testes.
 
-| Validação | Resultado |
+| Teste | Escopo |
 | --- | --- |
-| `npm test` | 38 testes automatizados aprovados |
-| `npm run test:ui` | Electron real, preload/IPC, descoberta local, temas, modais, dependências, preparação e revisão de inicialização aprovados |
-| `npm run test:agents` | Premain Skinwalker, ZombieBuddy e ambos juntos inicializaram sem DLL de mod extra |
-| Hash do `projectzomboid.jar` e JSON vanilla | Preservados antes/depois do teste de agentes |
-| Aplicativo Windows empacotado | Janela/IPC reais, isolamento ativo e pacote sem arquivos de mods |
-| `npm install` / auditoria inicial | Nenhuma vulnerabilidade conhecida reportada pelo npm na execução |
+| `npm test` | 49 regressões aprovadas: catálogo, caminhos, cópias, OpenID, JSON e C# |
+| `tests/NativeRegression.cs` | Quatro cenários de energia com executor Windows simulado |
+| `npm run test:ui` | Sete abas, três componentes, preparação/injeção/restauração real em pasta fictícia, clipboard, hardware, temas e janelas compactas |
+| `npm run test:package` | Executável empacotado, recursos Duck, auxiliar C#, IPC, sandbox e hash da distribuição |
+| `node tools/verify-portable.cjs` | Portátil real aberto com perfil isolado, interface, hardware C# e encerramento limpo sem abrir PZ |
+| `npm run test:agents` | Probe separado, exige PZ/agentes reais; não homologa uma partida |
 
-As cópias dos testes são criadas em pastas temporárias próprias e removidas ao terminar. Os testes de preparação preservam os arquivos de origem e removem apenas runtime. A validação do pacote usa `--user-data-dir` temporário e verifica o isolamento antes de acessar a interface, sem disputar a instância aberta ou ler o perfil real. As screenshots ficam em `test-results`, fora da distribuição.
+Fixtures usam JARs sintéticos e uma configuração cliente descartável. O teste faz a escrita JSON e sua reversão **nessa instalação falsa**, verifica backup byte a byte e nunca executa os JARs falsos. Pacote usa `--user-data-dir` separado. Exclusões são restritas a diretórios temporários próprios.
 
-## Cobertura
+O monitor C# foi compilado e testado aguardando uma pasta sem jogo executado, com energia/prioridade desativadas; duplicação foi recusada, solicitação de parar restaurou o estado e o processo encerrou sozinho. Os quatro cenários de energia cobrem clone/original, troca manual, falha parcial e registro adulterado, sem mudar os planos reais do computador.
 
-- Dependências, duplicações, ciclos e catálogo sem comandos arbitrários.
-- Ordem canônica Skinwalker antes de ZombieBuddy, independentemente dos cliques; hook Exposer presente no probe combinado.
-- Parser de bibliotecas Steam antigas/novas e configuração Windows por versão numérica.
-- Caminhos com espaços, limites, escape de diretórios e classes soltas.
-- Premain esperado, classe dentro do JAR, manifesto assinado grande e limite de descompressão.
-- Preparação, revisão expirada, alteração de configuração, origem atualizada e cópia adulterada.
-- Preservação de Workshop e JSON, limpeza restrita à pasta do launcher.
-- Endpoint OpenID fixo, assinatura negativa, retorno/identidade divergentes, nonce antigo, duplicação de parâmetros e resposta remota excessiva.
-- Retorno HTTP loopback real com confirmação Steam **simulada**, cancelamento e descarte do SteamID.
-- Interface sem campos de senha, tema claro/escuro e ausência de overflow horizontal no modo compacto.
+## O Que Ainda Precisa de Partida Real
 
-## O Que os Testes Não Provam
+- Carregamento efetivo dos agentes pelo launcher vanilla e pela Steam depois de gravar o JSON.
+- Renderização Viewpoint, VOIP Skinwalker, transformadores combinados, servidor/anticheat e compatibilidade MP.
+- Login Steam com conta real e retorno no navegador usado pelo jogador.
+- Ganhos de FPS/frametime, pressão de RAM, temperatura e autonomia com cada perfil.
+- Energia/prioridade em computadores com políticas e permissões diferentes; recuperação após falha abrupta do helper.
+- Instalação em outro disco, caminhos acentuados, SmartScreen, antivírus e teste prolongado de memória.
 
-`premain` + `java -version` demonstra que o agente entra na JVM e encontra suas classes. **Não valida uma partida inteira**, renderização Viewpoint, captura VOIP, sincronização MP, conflitos de transformação ou carregamento de todos os mods Lua. O teste do login não entrou em uma conta real da Steam.
-
-No probe, ZombieBuddy emite avisos sobre classes experimentais não expostas e uma API `Unsafe` depreciada usada pelo Byte Buddy. A JVM encerrou normalmente e instalou o agente; esses avisos não foram escondidos nem usados como prova de compatibilidade durante uma partida.
-
-Ainda precisam ser homologados:
-
-1. Login real com navegador padrão e callback aceito pela Steam, em uma conta do usuário.
-2. Partida SP em save descartável, com cada componente separado e todos juntos.
-3. Conexão MP à configuração exata da temporada, incluindo verificação do servidor/anticheat e aprovador ZombieBuddy.
-4. Atualização real de Workshop seguida de nova aprovação e retorno ao vanilla.
-5. Distribuição do portátil em outro computador Windows, instalação em outro disco, nomes acentuados e antivírus.
-6. Teste prolongado de recursos/memória do launcher e do jogo, sem prometer ausência absoluta de leaks.
+Probe de premain não demonstra funcionamento completo de um mod. Nenhum benchmark comparativo foi concluído nesta etapa; não declarar FPS garantido ou ausência absoluta de leaks.
 
 ## Roteiro Manual
 
-1. Faça backup do save de teste, abra Steam e feche o PZ anterior.
-2. Rode o launcher com seleção vazia e teste abertura vanilla pelo botão Iniciar PZ.
-3. Feche o jogo e teste somente Skinwalker, depois somente Viewpoint + ZombieBuddy.
-4. Confirme as aprovações normais do framework e os mods ativos no PZ.
-5. Teste todos juntos em cenário descartável; se falhar, compare cada grupo isolado antes de atribuir culpa ao launcher.
-6. Atualize um JAR: o launcher deve pedir nova revisão, sem reaproveitar silenciosamente o conteúdo anterior.
-7. Feche o jogo, remova runtime e confirme que Workshop/PZ/saves continuam intactos.
-8. Valide login e logout: não deve surgir campo de senha nem SteamID em settings/prepared/diagnóstico.
-
-Os testes não desligam antivirus, não editam saves de produção e não aplicam Java no servidor dedicado.
+1. Faça backup de um save descartável. Feche o PZ e confirme que ele abre vanilla pela Steam antes de testar.
+2. Selecione apenas Skinwalker, revise, prepare e injete. Feche o utilitário e abra pela Steam.
+3. Confira as mensagens do agente no console. Feche o jogo e restaure; compare o JSON original.
+4. Repita com Viewpoint + ZombieBuddy, preservando aprovações do framework; depois teste a combinação inteira.
+5. Atualize um JAR e confirme que exige nova revisão e preparação; não deve reutilizar silenciosamente o hash antigo.
+6. Ative somente monitoramento de RAM, feche a interface e abra PZ manualmente. Confirme auxiliar sem CMD e encerramento após sair do jogo.
+7. Teste prioridade e energia separadamente. Confira o plano original depois de encerrar e ao solicitar Restaurar sessão.
+8. Troque o plano manualmente durante a sessão: restauração não deve substituir a escolha manual.
+9. Edite um JSON de teste após injetar: restauração deve recusar para preservar mudanças externas.
+10. Confirme que diagnóstico e preferências não persistem SteamID/credenciais, e que nenhum arquivo Workshop/save foi alterado.

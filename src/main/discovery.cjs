@@ -62,7 +62,7 @@ async function modRoots(root, depth = 0, result = [], budget = { left: 1800 }) {
 async function discover(settings, catalog, progress = () => {}) {
   progress('Procurando bibliotecas Steam');
   const libraries = await steamPaths(settings);
-  const gameCandidates = [settings.gamePath, ...libraries.map(root => path.join(root, 'steamapps/common/ProjectZomboid'))].filter(Boolean);
+  const gameCandidates = settings.gamePath ? [settings.gamePath] : libraries.map(root => path.join(root, 'steamapps/common/ProjectZomboid'));
   let gamePath = null;
   for (const candidate of gameCandidates) { try { gamePath = await validateGame(candidate); break; } catch { } }
   progress('Localizando JARs da Workshop');

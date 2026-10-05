@@ -1,72 +1,54 @@
-# Continuidade do Desenvolvimento
+# Continuidade do Projeto
 
-## Pedido Original e Limites
+## Estado Atual: 0.2.0
 
-Criar Java Injeto - PZ para desktop Windows, interface PTBR e foco Organic. Preparar somente JARs; os mods são baixados normalmente pela Workshop. Não copiar Lua, modelos, `.class` soltas, DLLs de mods ou sobrescrever arquivos vanilla. Steam login opcional pelo navegador, sem persistir credenciais/dados de conta. Não criar backend, sistema de telemetria ou login falso.
+Redesign da árvore existente, não recriação. O Java Injeto agora é exclusivamente um utilitário/injetor: **nunca adicionar novamente um botão ou IPC para abrir o jogo**. Os mods continuam na Workshop; só agentes conhecidos são preparados.
 
-Pasta de desenvolvimento original: `%USERPROFILE%\Desktop\Launcher - Organic`. Em um clone público, use a raiz escolhida para `java-injeto-pz`; não dependa de um nome de usuário Windows específico.
+Referência B42.21, Windows x64. Projeto original em `%USERPROFILE%\Desktop\Launcher - Organic`; um clone pode estar em qualquer pasta. Logo Duck fornecida pelo autor; sem dependência de caminho pessoal para compilar.
 
-## Já Implementado
+## Implementado
 
-- Electron + React + Vite, interface local, filtros, busca, temas, animações reduzidas e modais de consentimento.
-- Catálogo Skinwalker, Viewpoint e ZombieBuddy com validação de campos/caminhos/dependências.
-- Descoberta Steam por Registro e VDF, seleção manual e busca estrutural limitada.
-- Hashes, manifesto premain, cópias somente JAR, preparo revisável e remoção restrita.
-- Inicialização via Java bundled do PZ, sem alterar JSON/Steam/Workshop.
-- Viewpoint permanece na estrutura original e depende do ZombieBuddy; não é um agente independente.
-- Login OpenID real implementado; resposta Steam é validada no endpoint oficial. Testes de assinatura usam mock; login com conta real ainda pendente.
-- Histórico em RAM, exportação manual sem SteamID e bloqueio de conteúdo externo/IPC não autorizado.
-- 38 testes unitários, teste Electron real, aplicativo Windows empacotado e três testes de entrada de agentes na JVM.
+- Sete abas compactas, temas, pastas configuráveis, revisão e detalhes de integridade.
+- Serviços originais de descoberta/cópia/hashes/OpenID preservados.
+- Ativação com backup integral do JSON; proteção de mudanças externas e reversão exata.
+- Otimizador nativo C#: hardware, heap recomendado, prioridade, energia clonada, RAM e fechamento seletivo normal.
+- Helper destacado e persistente por hash, sem CMD; fechamento da janela encerra Electron.
+- Ícone Duck em PNG/ICO, recursos do executável e criação de atalho pelo app.
+- 49 regressões, testes C# de energia sem tocar Windows, Electron com instalação fictícia e validação de pacote.
 
-## Referências Locais
+## Regras de Manutenção
 
-```text
-%USERPROFILE%\Zomboid\Workshop\Skinwalker\Contents\mods\Skinwalker\42\media\java\SkinwalkerAgent.jar
-<biblioteca Steam>\steamapps\workshop\content\108600\3809306528\mods\Viewpoint
-<biblioteca Steam>\steamapps\workshop\content\108600\3619862853\mods\ZombieBuddy
-<biblioteca Steam>\steamapps\common\ProjectZomboid
-```
+1. Não abrir o PZ, instalar classes soltas ou substituir o JAR do jogo. O JSON é o único arquivo vanilla gerenciado, mediante revisão e backup.
+2. Não redistribuir arquivos dos mods. Viewpoint permanece na Workshop e depende de ZombieBuddy.
+3. Preservar `policy=prompt` e ordem Skinwalker antes de ZombieBuddy. Não confundir ordem dos cliques com ordem de agentes.
+4. Não executar um JAR para revisá-lo. Hash e manifesto não são provas de segurança; assinatura ainda não é validada criptograficamente.
+5. Não limpar RAM global, pagefile, caches, antivírus ou serviços Windows. Processos só são fechados por escolha explícita, sem kill.
+6. Energia somente em plano clonado, com registro/restauração. Preservar mudanças manuais do usuário durante sessão.
+7. Testes de escrita devem usar instalação fictícia, nunca saves ou JSON reais. Não automatizar login real ou partida de produção.
+8. Sem SteamID em disco, telemetria, contas próprias ou gravação de áudio pelo utilitário.
 
-Não presuma esses caminhos em outros computadores: descoberta e seleção manual já são a estratégia. Skinwalker ainda usa Workshop ID nulo no catálogo, por não ter uma publicação confirmada.
-
-Skinwalker premain: `io.duckstudio.skinwalker.Agent`, protocolo atual 0.3.0. ZombieBuddy premain: `me.zed_0xff.zombie_buddy.Agent`, instalado 2.3.4. Viewpoint instalado 0.1.5a-hotfix; Workshop 3809306528. A referência do game é B42.21; não usar Umbrella .20 para afirmar APIs atuais sem verificar.
-
-## Cuidados Aprendidos
-
-- O manifesto assinado ZombieBuddy possui 1.140.461 bytes; o limite antigo 64 KiB era incorreto. Agora há limite 4 MiB e teste de regressão.
-- Viewpoint tem mod.info em `common`, não necessariamente em `42`; a descoberta aceita ambos.
-- Pastas `zombie` vazias não são classes conflitantes. Bloqueie arquivos `.class`, links ou árvores excessivas, sem remover arquivos do usuário.
-- Esquemas URL personalizados podem ter `.origin` igual a `null` em Node. Validação de IPC usa protocolo, hostname, caminho e frame diretamente.
-- Javaagent funciona em caminho absoluto com espaços quando `spawn` recebe argumentos separados. Não monte string de shell.
-- ZombieBuddy exige preservar aprovações. Nunca trocar policy por allow-all para esconder problemas.
-- A ordem dos agentes é canônica: Skinwalker antes de ZombieBuddy. O segundo aquece Exposer em premain; inverter pode impedir o hook Skinwalker. Não depender da ordem dos cliques.
-- O login não restringe acesso ao servidor e não comprova propriedade do jogo.
-- `test:ui` não pode chamar confirmação final de iniciar jogo ou login real automaticamente.
-- Somente dados temporários isolados podem ser apagados pelos testes; preserve saves e arquivos originais.
-
-## Próxima Etapa Recomendada
-
-Comece pela homologação manual descrita em TESTES_PTBR, não por aumentar o catálogo. Teste abertura vanilla, agentes separados, combinação e MP. Investigue qualquer incompatibilidade Java com logs do jogo fornecidos pelo usuário, sem coletar conversas ou voz automaticamente.
-
-Depois avalie assinatura de código do executável, distribuição de hashes, revisão de licenças e suporte a mais agentes. Atualizações automáticas exigiriam manifesto assinado, verificação do editor e análise própria de segurança; ainda não existem.
-
-Não alegue que logs de teste `premain` comprovam renderização/VOIP/MP. Não prometa ausência de riscos de terceiros ou save indestrutível. Nenhum segredo/chave Steam deve ser colocado no catálogo ou fonte.
-
-## Comandos de Retomada
+## Retomar o Trabalho
 
 ```powershell
 npm ci
 npm test
-npm run build
+npm start
 npm run test:ui
-npm run test:agents
 npm run dist
+npm run test:package
+node tools/verify-portable.cjs
 ```
 
-Leia ARQUITETURA_PTBR e NOVOS_AGENTES_PTBR antes de editar serviços de preparação/execução. `npm run dev` é só prévia no navegador; para testar IPC use Electron.
+Leia `ARQUITETURA_PTBR.md`, `OTIMIZADOR_PTBR.md`, `TESTES_PTBR.md` e o código dos validadores antes de mudar contratos. Testes UI/pacote usam `tools/test-fixture.cjs`; JARs falsos são somente fixtures, jamais executados. `test:agents` é opcional e usa agentes reais num probe `-version`.
 
-## Publicação Open Source
+O teste do portátil usa CDP local temporário: o wrapper de extração não oferece o pipe de inspector Node esperado por `_electron.launch`. O modo normal do aplicativo não abre porta de depuração. Ao atualizar a distribuição, substitua também a cópia estável `Java Injeto.exe` da raiz, após fechar a anterior.
 
-Repositório: https://github.com/gamerplay20p5-dotcom/java-injeto-pz. Código próprio sob licença MIT; dependências e mods continuam com seus autores. `README.md` é a apresentação pública; `README_PTBR.md` mantém o manual completo.
+## Próximos Passos
 
-O CI usa Windows e Node 24 para `npm ci`, `npm test` e `npm run build`, sem arquivos do jogo, agentes ou credenciais. Releases podem distribuir somente o launcher e seu hash, nunca mods ou gravações. Não faça commit de `release`, `test-results`, `node_modules`, dados locais ou segredos.
+Primeiro homologar manualmente injeção e restauração com a Steam, cada agente isolado e os três componentes juntos, em saves descartáveis. Confirmar comportamento em MP/anticheat. Medir frametime, FPS, RAM e temperatura antes/depois dos perfis, sem prometer ganho universal.
+
+Testar o monitor em partida real, retirada da tomada, fechamento abrupto do app, permissões negadas e recuperação de energia. Cenários de energia automatizados usam executor simulado e não provam permissões reais em todos os PCs.
+
+Depois avaliar assinatura Windows, validação criptográfica JAR, limpeza explícita de helpers/cópias antigas sem apagar referências ativas e cadastro de novos agentes homologados. Atualização remota assinada não existe.
+
+Repositório: https://github.com/gamerplay20p5-dotcom/java-injeto-pz. Código MIT. A publicação 0.1.0 tinha outro fluxo; não afirmar que um binário 0.2.0 foi publicado antes de realmente disponibilizá-lo. Não versionar release, JARs, dados locais ou segredos.

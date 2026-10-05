@@ -1,97 +1,63 @@
-# Arquitetura e Explicação do Código
+# Arquitetura e Código
 
-## Escolha Técnica
+## Estrutura Preservada
 
-Electron fornece a janela desktop e os diálogos Windows. React organiza a interface, Lucide fornece os ícones e Vite compila os arquivos locais. O processo principal faz operações de arquivos; a interface não recebe Node.js, shell ou acesso arbitrário ao computador.
+O projeto existente Electron/React foi mantido. Descoberta, parsing VDF, validação de catálogo, revisão de manifesto, SHA-256, dependências, cópias e OpenID continuam nos serviços originais. A versão 0.2 substitui a interface e remove todos os comandos IPC que abriam o jogo.
 
-Não existe injeção em processo alheio já aberto. O launcher inicia uma JVM nova do PZ com argumentos `-javaagent` conhecidos. Isso evita substituir o JAR vanilla, instalar classes avulsas ou copiar DLLs de mods. O Java utilizado é sempre `jre64/bin/java.exe` dentro da instalação validada do jogo.
+Electron hospeda a janela e diálogos. C# executa hardware, detecção de processos, prioridade e energia. O aplicativo não é JavaScript apenas, não injeta em processo aberto e não precisa manter Chromium no segundo plano da partida.
 
-## Mapa dos Arquivos
-
-| Arquivo | Responsabilidade |
+| Módulo | Responsabilidade |
 | --- | --- |
-| `catalog.json` | Componentes permitidos, Workshop IDs, caminhos de JAR, classe premain e dependências. Não contém arquivos dos mods. |
-| `src/main/catalog.cjs` | Valida o catálogo; recusa caminhos que escapem de pastas, comandos extras, IDs duplicados e dependências circulares. |
-| `src/main/discovery.cjs` | Detecta Steam/bibliotecas, valida o cliente e encontra JARs por estrutura e `mod.info`. |
-| `src/main/jar.cjs` | Abre o ZIP/JAR, lê o manifesto principal, valida Premain-Class e calcula SHA-256. |
-| `src/main/files.cjs` | Caminhos contidos, leituras limitadas, hash por stream, JSON atômico e inspeção de classes antigas. |
-| `src/main/profile.cjs` | Valida preferências, resolve dependências, cria revisão, prepara cópias e monta os argumentos da JVM. |
-| `src/main/steam-auth.cjs` | OpenID Steam no navegador, callback loopback e confirmação de assinatura no endpoint oficial. |
-| `src/main/index.cjs` | Janela, protocolo local, IPC autorizado, estado da interface, operações exclusivas e processo Java. |
-| `src/preload.cjs` | Ponte com métodos específicos; não expõe ipcRenderer, sistema de arquivos ou execução de comandos. |
-| `src/renderer/main.jsx` | Biblioteca, configurações, atividade, privacidade, modais e tratamento de erros em PTBR. |
-| `src/renderer/styles.css` | Temas, dimensões responsivas, foco, estados e redução de animações. |
-| `tests/*.test.cjs` | Regressões de catálogo, arquivos, perfis, parâmetros Windows e OpenID. |
-| `tools/verify-ui.cjs` | Teste desktop Playwright/Electron, screenshots e preparação real isolada. |
-| `tools/verify-agents.cjs` | Teste dos agentes reais copiados, sem iniciar a partida. |
+| `src/main/catalog.cjs`, `catalog.json` | Componentes conhecidos e validação de campos/dependências |
+| `src/main/discovery.cjs` | Registro Steam, VDF, pastas manuais e busca estrutural |
+| `src/main/jar.cjs` | ZIP/manifesto, premain, versão, indicação de assinatura e hash |
+| `src/main/files.cjs` | Leituras limitadas, hash por stream, escrita atômica e contenção de caminhos |
+| `src/main/profile.cjs` | Preferências e preparação das cópias aprovadas |
+| `src/main/injection.cjs` | Revisão, backup integral, atualização JSON e restauração |
+| `src/main/optimizer.cjs` | Perfis, calibração, IPC nativo e ciclo do auxiliar |
+| `native/OrganicHelper.cs` | Consultas Windows, monitor e restauração temporária |
+| `native/PowerSession.cs` | Plano clonado/restauração, com executor testável |
+| `src/main/steam-auth.cjs` | OpenID no navegador com confirmação Steam |
+| `src/main/index.cjs` | Janela, protocolo, IPC autorizado e operações serializadas |
+| `src/preload.cjs` | Ponte restrita; não oferece shell, Node ou abertura de jogo |
+| `src/renderer/App.jsx`, `styles.css` | Sete abas, estados, confirmações e interface responsiva |
+| `tools/build-native.ps1` | Compilação C# local; não usa servidor ou download de helper |
+| `tools/prepare-brand.ps1` | Conversão da logo fornecida e ICO multirresolução |
 
-## Busca de Arquivos
+## Descoberta e Revisão
 
-`steamPaths()` consulta apenas o caminho Steam no Registro e `libraryfolders.vdf`. O VDF é interpretado com um parser, incluindo bibliotecas antigas. Não lemos `loginusers.vdf`, cookies, credenciais ou configurações de contas Steam.
+Consulta apenas SteamPath e `libraryfolders.vdf`; não lê contas, cookies ou credenciais. A busca visita diretórios estruturais até profundidade seis, orçamento 1.800 por raiz, até oito pastas adicionais. Pula `media`, mapas, modelos e ferramentas. Não há varredura permanente.
 
-`validateGame()` verifica os três arquivos mínimos e a classe principal `zombie/gameStates/MainScreenState`. Uma configuração de servidor dedicado é recusada.
+JAR: arquivo regular de 22 bytes a 128 MiB; manifesto principal até 4 MiB, necessário para o manifesto assinado grande do ZombieBuddy. SHA-256 usa stream. Ler o ZIP ainda consome memória temporária limitada pelo tamanho máximo; não é um antivírus.
 
-`modRoots()` visita diretórios estruturais com profundidade máxima seis e orçamento de 1.800 diretórios por raiz. Pula árvores pesadas de `media`, modelos, mapas, bibliotecas e ferramentas. A busca acontece ao abrir ou por solicitação; não fica examinando o disco continuamente.
+Tokens de revisão expiram em cinco minutos. Hashes e seleção são revalidados antes de preparar. Cópias vão para runtime próprio por hash. Viewpoint permanece na Workshop; Skinwalker antes de ZombieBuddy; `policy=prompt` preservado. Versão ausente no manifesto é mostrada como não declarada.
 
-Prioridade: seleção manual do JAR de um agente, Workshop conhecida nas bibliotecas Steam, Workshop local de desenvolvimento e pastas adicionais. A biblioteca Steam escolhida explicitamente tem prioridade sobre a detectada no Registro. Se algo não for encontrado, há uma busca estrutural limitada por Mod ID nos outros itens da Workshop, inclusive para publicações cujo número ainda não está no catálogo. O limite de oito pastas adicionais evita uma varredura ilimitada. Mods não encontrados podem ser selecionados explicitamente.
+## Injeção Reversível
 
-## JAR e Validação
+`Profiles.launchPlan()` e `commandFor()` foram mantidos como validadores internos de argumentos e cópias. **Não existe handler de launch, nem execução desse plano pelo aplicativo.** O teste de agentes reutiliza estes validadores em probe isolado, não numa partida.
 
-`safeJar()` resolve o caminho real e exige arquivo regular `.jar`, de 22 bytes até 128 MiB. `inspectJar()` valida o manifesto e, para agentes, a classe premain exata do catálogo e a existência de seu `.class` dentro do ZIP.
+`Injection.review()` valida pasta, contenção do JSON, agentes desconhecidos e configuração atual. A aplicação revalida o token, destino e hash; grava um backup integral e um journal antes da escrita atômica do JSON. Reaplicar usa o original preservado, não um JSON já modificado como novo baseline.
 
-O manifesto pode ter até 4 MiB: o ZombieBuddy assinado contém aproximadamente 1,1 MiB de seções com resumos por classe. Só a seção principal define Premain-Class; continuações de linha seguem o formato JAR. Essa leitura não executa Java.
+Classpath, classe principal, flags nativas e coletor Windows são preservados. Heap/SoftMax são gerenciados conforme opções, e apenas agentes conhecidos são adicionados. Agentes não gerenciados em qualquer variante Windows impedem combinação automática. Classes avulsas antigas bloqueiam sem serem apagadas.
 
-O hash é calculado por stream, não carregando todo o arquivo outra vez para produzir SHA-256. A biblioteca ZIP ainda precisa analisar o JAR em memória, portanto o limite de tamanho é importante. Não afirmamos que um JAR aceito seja seguro: um arquivo malicioso também poderia declarar a classe esperada.
+`restore()` exige hash do backup e JSON atual reconhecido. `previousHash` permite recuperar uma gravação interrompida. Mudanças externas bloqueiam restauração para não perder configuração manual. Remoção do runtime é recusada enquanto houver referências ativas ou estado desconhecido.
 
-## Revisão e Preparação
+O jogo usa os agentes quando iniciado pelo próprio launcher vanilla/Steam que lê `ProjectZomboid64.json`. O utilitário não modifica opções Steam, não substitui `projectzomboid.jar` e não captura saída do jogo.
 
-`dependencies()` retorna dependências em ordem, sem duplicar agentes. Viewpoint inclui ZombieBuddy; não força ZombieBuddy para Skinwalker.
+## Auxiliar C#
 
-A ordem vem do catálogo e das dependências, não da ordem dos cliques. Skinwalker entra antes de ZombieBuddy: o segundo aquece/carrega `LuaManager$Exposer` em premain, e o primeiro precisa instalar seu transformador antes desse carregamento. `launchPlan()` também reordena um manifesto válido pela ordem canônica. Não inverter as entradas do catálogo sem testar hooks e inicialização.
+Consultas WMI sob demanda, RAM pela API Windows, execução sem shell e sem CMD. O monitor aceita somente nomes/processos da sessão Windows atual, executável dentro do jogo selecionado e, para Java, a classe cliente PZ. Servidor dedicado não é alvo. Nenhuma chamada abre o jogo.
 
-`Profiles.review()` gera um token aleatório, com validade de cinco minutos, associado ao hash das configurações e dos arquivos. Retorna origem, destino, nomes e avisos para confirmação visual.
+Ativação copia o helper próprio por SHA-256 para AppData antes de destacá-lo: o portátil pode apagar sua extração temporária ao fechar, sem apagar o helper em execução. Mutex impede duplicação. Estado tem tamanho limitado; amostragem é de dez segundos, sem log infinito. Objetos de processos encerrados são descartados.
 
-`Profiles.apply()` verifica esse token e revalida os hashes. Agentes são copiados para:
+Prioridade nunca usa tempo real. Energia clona o plano ativo e modifica apenas a cópia; journal permite recuperar interrupção. Restauração respeita plano escolhido manualmente durante a sessão. Não modifica plano original, antivírus, drivers, caches globais ou working sets.
 
-```text
-%APPDATA%\Java Injeto - PZ\
-  settings.json
-  prepared.json
-  runtime\
-    <sha256>\SkinwalkerAgent.jar
-    <sha256>\ZombieBuddy.jar
-```
+Ao fechar a janela, Electron encerra. Se explicitamente ativado, o helper continua esperando até 30 minutos; após o jogo encerrar, finaliza e restaura. O usuário pode solicitar parar/reverter pela interface reaberta.
 
-Uma cópia é escrita em arquivo temporário exclusivo, verificada e renomeada. O manifesto só é publicado após todas as cópias necessárias. Não há execução de JAR durante a preparação. Uma falha pode deixar cópias sem referência, mas não publica um perfil parcial. Remover JARs apaga o diretório runtime próprio e o manifesto, nunca a Workshop.
+## Isolamento e Privacidade
 
-Viewpoint não é copiado: o perfil registra seu caminho/hash e o framework o carrega pela estrutura original do mod quando está ativo. Copiar só seu JAR não bastaria para instalar o mod.
+`contextIsolation`, sandbox, `nodeIntegration:false`, CSP local e validação de frame/origem em cada IPC. Sem janela remota, iframes, microfone/câmera ou comandos arbitrários. Clipboard aceita somente texto limitado; abertura de pastas usa destinos conhecidos.
 
-## Inicialização
+OpenID usa navegador oficial, callback em `127.0.0.1`, estado aleatório, prazo cinco minutos e endpoint Steam fixo sem redirects. Campos assinados, nonce e identidade são validados. SteamID somente em RAM; atividade até 60 eventos. Exportação é explícita.
 
-`windowsArgs()` escolhe a seção Windows do JSON vanilla por comparação numérica de versões. `commandFor()` preserva classpath e argumentos normais, usa memória vanilla por padrão e acrescenta apenas os agentes aprovados. Não modifica esse JSON no disco.
-
-Agentes antigos conhecidos no JSON são removidos somente do plano em memória para evitar duplicação. Um agente desconhecido bloqueia o plano para revisão. Classes avulsas no diretório `zombie` também bloqueiam sem exclusão; uma pasta vazia é aceitável. A inspeção de classes tem orçamento de 1.000 diretórios e bloqueia árvores excessivas ou links simbólicos para não seguir caminhos desconhecidos.
-
-`launchPlan()` revalida origem e cópia e devolve o comando para outra confirmação de até dois minutos. `launch` recalcula esse plano; divergências exigem revisão. O processo usa `spawn` com vetor de argumentos e `shell:false`, evitando transformar espaços em comandos de shell.
-
-O PATH deste processo começa por `jre64/bin` e `win64` do PZ. Variáveis genéricas de injeção JVM, `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS` e `_JAVA_OPTIONS`, não são herdadas pelo processo do jogo. Nenhuma configuração global é alterada. ZombieBuddy recebe `policy=prompt`; aprovações de mods continuam sendo responsabilidade dele.
-
-O launcher acompanha apenas o processo iniciado por ele e seu código de saída. Não monitora comandos de outros processos, não captura stdout/chat do jogo e não envia diagnósticos automaticamente. Portanto, feche instâncias abertas por outros atalhos antes de usar o launcher.
-
-## Isolamento da Interface
-
-A janela usa `contextIsolation:true`, `sandbox:true`, `nodeIntegration:false` e `webSecurity:true`. O conteúdo vem de `organic://launcher`, com CSP restrita, sem navegação externa, iframes ou permissões de microfone/câmera. Novas janelas são bloqueadas.
-
-Cada IPC valida a janela, o frame principal e a URL local. Métodos aceitam somente ações específicas, IDs do catálogo e configurações validadas. Não existe IPC de executar PowerShell, de escrever um arquivo arbitrário ou de abrir qualquer URL fornecida pela interface.
-
-`exclusive()` serializa operações de arquivos e impede preparação/remoção enquanto o processo do jogo conhecido está ativo. A atividade fica limitada a 60 eventos em RAM.
-
-## OpenID Steam
-
-`SteamAuth.start()` cria nonce/estado aleatório e servidor HTTP apenas em `127.0.0.1`, com porta aleatória e prazo de cinco minutos. O navegador recebe a URL do endpoint oficial Steam.
-
-O retorno exige estado correspondente, Host local, parâmetros sem duplicação, identidade Steam válida, return_to exato e campos assinados obrigatórios. O nonce deve ser recente. `verifyAssertion()` envia check_authentication para um endpoint Steam fixo, sem aceitar redirects, e exige assinatura confirmada. Há limite de 8 KiB para resposta e timeout de dez segundos.
-
-Sucesso encerra o listener e mantém somente SteamID em RAM. Cancelar, expirar, desconectar e fechar descartam o estado. O SteamID é exposto à interface apenas para informar a sessão. Não é incluído nos arquivos de preferências ou exportação.
-
-O login não substitui a Steam aberta, não usa chave Web API e não concede acesso a um servidor privado. Um futuro controle de acesso online exigiria outra arquitetura e uma política de dados separada.
+Operações de escrita são serializadas. Detecção de jogo aberto antecede injeção/restauração. Agentes terceiros não estão dentro do sandbox Electron: mantenha aviso de risco e nunca alegue que manifesto/hash provam segurança.

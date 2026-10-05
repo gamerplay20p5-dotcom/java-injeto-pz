@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 const { inspectJar } = require('./jar.cjs');
 const { validateGame } = require('./discovery.cjs');
 const { exists, boundedRead, hash, within, hasLooseClasses, atomicJson } = require('./files.cjs');
+const { optimizerSettings } = require('./optimizer.cjs');
 
 function dependencies(selected, catalog) {
   const byId = new Map(catalog.map(mod => [mod.id, mod]));
@@ -50,6 +51,7 @@ function validateSettings(value, catalog) {
   }
   result.theme = value.theme === 'light' ? 'light' : 'dark';
   result.reduceMotion = value.reduceMotion === true;
+  result.optimizer = optimizerSettings(value.optimizer);
   return result;
 }
 
@@ -65,12 +67,20 @@ function windowsArgs(config, release = os.release()) {
   return [...config.vmArgs, ...options];
 }
 
+function managedAgent(arg) {
+  const match = /^-(javaagent|agentpath|agentlib):(.+)$/.exec(arg);
+  if (!match) return false;
+  const name = path.win32.basename(match[2].split('=')[0]).toLowerCase();
+  return match[1] === 'javaagent' ? ['skinwalkeragent.jar', 'zombiebuddy.jar'].includes(name)
+    : match[1] === 'agentlib' ? name === 'zbnative' : name === 'zbnative.dll';
+}
+
 function commandFor(config, gamePath, prepared, settings, release) {
   if (config.mainClass !== 'zombie/gameStates/MainScreenState' || !Array.isArray(config.vmArgs) || !Array.isArray(config.classpath)) throw new Error('JSON do cliente PZ inv\u00e1lido.');
   let vm = windowsArgs(config, release);
   if (vm.some(arg => typeof arg !== 'string') || config.classpath.some(item => typeof item !== 'string')) throw new Error('Argumentos vanilla inv\u00e1lidos.');
   // Apenas os agentes conhecidos s\u00e3o gerenciados aqui; outros agentes exigem revis\u00e3o, sem ocultar conflitos.
-  const unmanaged = vm.filter(arg => /^-(javaagent|agentlib|agentpath):/.test(arg) && !/SkinwalkerAgent\.jar|ZombieBuddy\.jar|zbNative/i.test(arg));
+  const unmanaged = vm.filter(arg => /^-(javaagent|agentlib|agentpath):/.test(arg) && !managedAgent(arg));
   if (unmanaged.length) throw new Error('O JSON vanilla cont\u00e9m outro agente Java. Revise essa instala\u00e7\u00e3o antes de combinar patches.');
   vm = vm.filter(arg => !/^-(javaagent|agentlib|agentpath):/.test(arg));
   if (settings.memoryGb > 0) vm = vm.filter(arg => !/^-Xm[xs]/.test(arg)).concat(`-Xmx${settings.memoryGb}g`);
@@ -127,7 +137,7 @@ class Profiles {
       settingsHash: crypto.createHash('sha256').update(JSON.stringify(settings)).digest('hex'), expires: Date.now() + 5 * 60 * 1000 };
     return { token, mods, gamePath, warnings: [
       'Agentes Java podem executar c\u00f3digo com as permiss\u00f5es do seu usu\u00e1rio. SHA-256 identifica o arquivo; n\u00e3o certifica sua seguran\u00e7a.',
-      'O launcher n\u00e3o ativa mods Lua no jogo. Ative os IDs e depend\u00eancias pela tela de mods ou pelo servidor.',
+      'O utilitario nao ativa mods Lua. Ative os IDs e dependencias pela tela de mods ou pelo servidor.',
       ...(ids.includes('skinwalker') && ids.includes('zombiebuddy') ? ['Skinwalker + ZombieBuddy: coexist\u00eancia ainda requer teste em um save descart\u00e1vel.'] : [])
     ] };
   }
@@ -160,18 +170,18 @@ class Profiles {
     const ids = dependencies(settings.selected, this.catalog);
     const gamePath = await validateGame(discovery.gamePath || settings.gamePath);
     if (ids.length && (!manifest || manifest.gamePath !== gamePath || JSON.stringify([...manifest.mods.map(mod => mod.id)].sort()) !== JSON.stringify([...ids].sort())))
-      throw new Error('Prepare novamente os JARs deste perfil antes de iniciar.');
+      throw new Error('Prepare novamente os JARs deste perfil antes de aplicar.');
     const mods = ids.map(id => manifest.mods.find(mod => mod.id === id));
     for (const mod of mods) {
       const current = discovery.mods.find(item => item.id === mod.id);
       if (current?.error) throw new Error(`${mod.name}: JAR invalido; revise sua origem.`);
-      if (current?.source !== mod.source || !await exists(mod.source) || await hash(mod.source) !== mod.hash) throw new Error(`${mod.name}: origem alterada; revise o novo JAR antes de iniciar.`);
+      if (current?.source !== mod.source || !await exists(mod.source) || await hash(mod.source) !== mod.hash) throw new Error(`${mod.name}: origem alterada; revise o novo JAR antes de aplicar.`);
       if (mod.kind === 'agent' && (!within(await fs.realpath(this.root), await fs.realpath(mod.installed)) || await hash(mod.installed) !== mod.hash)) throw new Error('C\u00f3pia preparada alterada. Remova e prepare novamente.');
     }
-    if (await hasLooseClasses(path.join(gamePath, 'zombie'))) throw new Error('Foram encontradas classes soltas em uma pasta zombie do jogo. Revise os patches antigos antes de iniciar; elas podem sobrescrever o JAR vanilla.');
+    if (await hasLooseClasses(path.join(gamePath, 'zombie'))) throw new Error('Foram encontradas classes soltas em uma pasta zombie do jogo. Revise os patches antigos antes de aplicar; elas podem sobrescrever o JAR vanilla.');
     const config = JSON.parse(await boundedRead(path.join(gamePath, 'ProjectZomboid64.json')));
     return { ...commandFor(config, gamePath, mods, settings), mods: mods.map(mod => mod.name),
-      memoryGb: settings.memoryGb, warnings: ['O Steam precisa estar aberto. Este perfil n\u00e3o altera o bot\u00e3o Jogar da Steam nem o save.'] };
+      memoryGb: settings.memoryGb, warnings: ['O utilitario nao inicia o jogo. Aplicacao somente apos revisao e backup.'] };
   }
   async remove() {
     const runtime = path.join(this.root, 'runtime');
@@ -185,4 +195,4 @@ class Profiles {
   }
 }
 
-module.exports = { dependencies, validateSettings, windowsArgs, commandFor, Profiles };
+module.exports = { dependencies, validateSettings, windowsArgs, commandFor, managedAgent, Profiles };
