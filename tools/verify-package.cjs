@@ -7,7 +7,7 @@ const { hash } = require('../src/main/files.cjs');
 const root = path.resolve(__dirname, '..');
 
 async function main() {
-  const release = path.join(root, 'release');
+  const release = path.resolve(root, process.argv[2] || 'release');
   const executable = path.join(release, 'win-unpacked/Java Injeto - PZ.exe');
   const archive = path.join(release, 'win-unpacked/resources/app.asar');
   const portable = path.join(release, 'Java-Injeto-PZ-0.1.0-Windows.exe');
@@ -17,6 +17,7 @@ async function main() {
   assert(asar.extractFile(archive, 'LICENSE').toString().startsWith('MIT License'), 'licenca propria acompanha o pacote');
   const packagedCatalog = JSON.parse(asar.extractFile(archive, 'catalog.json').toString());
   assert.equal(packagedCatalog.mods.length, 3);
+  await fs.mkdir(path.join(root, 'test-results'), { recursive: true });
   let app;
   try {
     const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;

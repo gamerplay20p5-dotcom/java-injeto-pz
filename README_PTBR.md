@@ -83,6 +83,8 @@ npm run dist
 
 Após `dist`, `npm run test:package` valida a janela empacotada, o conteúdo do pacote e gera `release/SHA256SUMS.txt`; exige PZ instalado para confirmar a descoberta. Testes de integração não fazem parte do CI público porque dependem do jogo e dos mods locais.
 
+Feche o portátil anterior antes de recompilar para o mesmo destino. Se ele precisar permanecer aberto, depois de `npm run build` use `npx electron-builder --win portable --config.directories.output=release/public` e valide com `npm run test:package -- release/public`. Os arquivos dessa compilação ficam em `release/public/`, sem sobrescrever o executável aberto.
+
 `npm run dev` oferece apenas uma prévia visual em `http://127.0.0.1:5178`, sem acesso nativo a arquivos, login ou execução Java. O aplicativo desktop usa recursos locais, não depende desse servidor.
 
 ## Documentação
