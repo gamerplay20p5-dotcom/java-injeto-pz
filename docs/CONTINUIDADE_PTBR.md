@@ -1,6 +1,6 @@
 # Continuidade do Projeto
 
-## Estado Atual: 0.2.1
+## Estado Atual: 0.3.0
 
 Redesign da árvore existente, não recriação. O Java Injeto agora é exclusivamente um utilitário/injetor: **nunca adicionar novamente um botão ou IPC para abrir o jogo**. Os mods continuam na Workshop; só agentes conhecidos são preparados.
 
@@ -15,6 +15,8 @@ Referência B42.21, Windows x64. Projeto original em `%USERPROFILE%\Desktop\Laun
 - Helper destacado e persistente por hash, sem CMD; fechamento da janela encerra Electron.
 - Ícone Duck em PNG/ICO, recursos do executável e criação de atalho pelo app.
 - Instalador offline NSIS PTBR, instalação por usuário, atalhos Duck, atualização e desinstalação sem excluir AppData.
+- ZombieBuddy Windows: revisão do par oficial DLL/JAR, backup transacional na raiz do PZ e restauração. Não ativar simultaneamente o mesmo ZombieBuddy por javaagent.
+- Atualizador por releases públicas fixas: SHA-256/tamanho, progresso, consentimento e handoff C# sem CMD. Consulta ao abrir começa desligada.
 - Regressões, testes C# de energia sem tocar Windows, Electron com instalação fictícia e validação de pacote/instalador.
 
 ## Regras de Manutenção
@@ -41,7 +43,7 @@ node tools/verify-portable.cjs
 npm run test:installer
 ```
 
-Leia `ARQUITETURA_PTBR.md`, `OTIMIZADOR_PTBR.md`, `TESTES_PTBR.md` e o código dos validadores antes de mudar contratos. Testes UI/pacote usam `tools/test-fixture.cjs`; JARs falsos são somente fixtures, jamais executados. `test:agents` é opcional e usa agentes reais num probe `-version`.
+Leia `ARQUITETURA_PTBR.md`, `ATUALIZACOES_PTBR.md`, `OTIMIZADOR_PTBR.md`, `TESTES_PTBR.md` e o código dos validadores antes de mudar contratos. Testes UI/pacote usam `tools/test-fixture.cjs`; JARs/DLLs falsos são somente fixtures, jamais executados. `test:agents` usa agentes e DLL oficiais, verifica classes reais, console redirecionado e encoding, sem abrir o jogo ou usar saves. O Skinwalker corrigido precisa ser atualizado separadamente na Workshop.
 
 O teste do portátil usa CDP local temporário: o wrapper de extração não oferece o pipe de inspector Node esperado por `_electron.launch`. O modo normal do aplicativo não abre porta de depuração. `npm run dist` mantém as cópias estáveis na raiz e os hashes dos dois arquivos. Feche a cópia anterior antes de recompilar.
 
@@ -53,6 +55,6 @@ Primeiro homologar manualmente injeção e restauração com a Steam, cada agent
 
 Testar o monitor em partida real, retirada da tomada, fechamento abrupto do app, permissões negadas e recuperação de energia. Cenários de energia automatizados usam executor simulado e não provam permissões reais em todos os PCs.
 
-Depois avaliar assinatura Windows, validação criptográfica JAR, limpeza explícita de helpers/cópias antigas sem apagar referências ativas e cadastro de novos agentes homologados. Atualização remota assinada não existe.
+Depois avaliar assinatura Windows, validação criptográfica JAR, limpeza explícita de helpers/cópias antigas sem apagar referências ativas e cadastro de novos agentes homologados. Atualização remota usa integridade GitHub, não assinatura de editor. A edição portátil usa o instalador ao atualizar; não substituir o EXE em execução nem prometer atualização automática da cópia portátil antiga.
 
 Repositório: https://github.com/gamerplay20p5-dotcom/java-injeto-pz. Código MIT. A publicação 0.1.0 tinha outro fluxo. Não versionar release, JARs, dados locais ou segredos; binários e hashes devem ir aos anexos da release, após validação.

@@ -13,7 +13,7 @@
       "id": "viewpoint", "name": "Viewpoint", "modId": "Viewpoint", "kind": "workshop",
       "category": "Perspectiva", "accent": "teal", "workshopId": "3809306528",
       "description": "Perspectiva em primeira pessoa, com Java carregado pelo ZombieBuddy.",
-      "notes": "Viewpoint.jar n\u00e3o \u00e9 um agente independente. Ele permanece na Workshop e \u00e9 carregado pelo ZombieBuddy quando Viewpoint est\u00e1 ativo no jogo.",
+      "notes": "Viewpoint.jar permanece na Workshop. Ative Viewpoint e ZombieBuddy no jogo e autorize o JAR no dialogo do ZombieBuddy. O ativa a perspectiva; Shift+O alterna primeira/terceira pessoa quando ativa. Se negou antes, segure Shift ao recarregar os mods para revisar a autorizacao. O injetor nao altera permissoes nem inicia o PZ.",
       "jarName": "Viewpoint.jar", "jarPaths": ["42/media/java/client/Viewpoint.jar"],
       "dependencies": ["zombiebuddy"], "build": "42.21"
     },
@@ -21,7 +21,7 @@
       "id": "zombiebuddy", "name": "ZombieBuddy", "modId": "ZombieBuddy", "kind": "agent",
       "category": "Framework", "accent": "lime", "workshopId": "3619862853",
       "description": "Framework Java necess\u00e1rio para os patches do Viewpoint.",
-      "notes": "Ativa -javaagent no JSON do cliente, com backup. N\u00e3o instala zbNative.dll, n\u00e3o altera op\u00e7\u00f5es Steam e preserva a aprova\u00e7\u00e3o de JARs do ZombieBuddy.",
+      "notes": "Windows: revisa ZombieBuddy.jar e zbNative.dll da pasta libs e copia o par para a raiz do PZ com backup. Ativa -agentpath no JSON com policy=prompt, sem -javaagent duplicado. Nao altera opcoes Steam nem aprovacoes de JARs. Copia instalada nao significa mod autorizado no jogo.",
       "jarName": "ZombieBuddy.jar", "jarPaths": ["libs/ZombieBuddy.jar"],
       "premain": "me.zed_0xff.zombie_buddy.Agent", "dependencies": [], "build": "42.x"
     }

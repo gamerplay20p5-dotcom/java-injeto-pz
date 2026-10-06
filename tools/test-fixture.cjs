@@ -19,6 +19,7 @@ async function fixture(root) {
     const zip = new AdmZip(); zip.addFile('META-INF/MANIFEST.MF', Buffer.from(`Manifest-Version: 1.0\r\nImplementation-Version: 1.0.0\r\n${mod.premain ? `Premain-Class: ${mod.premain}\r\n` : ''}\r\n`));
     if (mod.premain) zip.addFile(mod.premain.replace(/\./g, '/') + '.class', Buffer.from('fixture; nunca executar'));
     await fs.writeFile(jar, zip.toBuffer());
+    if (mod.id === 'zombiebuddy') await fs.writeFile(path.join(path.dirname(jar), 'zbNative.dll'), require('../tests/native-fixture.cjs').dll());
     if (mod.kind === 'agent') overrides[mod.id] = jar;
   }
   await fs.writeFile(path.join(data, 'settings.json'), JSON.stringify({ gamePath: game, steamPath: steam, selected: [], overrides, optimizer: { memoryAuto: false, jvm: false } }));

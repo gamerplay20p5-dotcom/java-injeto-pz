@@ -34,8 +34,11 @@ async function main() {
     await page.screenshot({ path: path.join(results, 'revisao.png'), fullPage: true });
     await inject.getByRole('checkbox').check(); await inject.getByRole('button', { name: 'Injetar agora', exact: true }).click();
     await page.locator('.success strong').getByText('Java posicionado com sucesso', { exact: true }).waitFor();
-    const flags = JSON.parse(await fs.readFile(fake.target, 'utf8')).vmArgs.filter(arg => arg.startsWith('-javaagent:'));
-    assert.equal(flags.length, 2); assert(flags[0].includes('SkinwalkerAgent.jar')); assert(flags[1].includes('ZombieBuddy.jar=policy=prompt'));
+    const vm = JSON.parse(await fs.readFile(fake.target, 'utf8')).vmArgs;
+    const flags = vm.filter(arg => arg.startsWith('-javaagent:'));
+    assert.equal(flags.length, 1); assert(flags[0].includes('SkinwalkerAgent.jar'));
+    assert(vm.includes(`-agentpath:${path.join(fake.game, 'zbNative.dll')}=policy=prompt`));
+    assert(await fs.stat(path.join(fake.game, 'ZombieBuddy.jar')));
     await page.getByRole('button', { name: 'Copiar SHA-256' }).click();
     assert.match(await app.evaluate(({ clipboard }) => clipboard.readText()), /^[a-f0-9]{64}$/);
     await page.screenshot({ path: path.join(results, 'desktop.png'), fullPage: true });
@@ -49,6 +52,7 @@ async function main() {
     await page.getByRole('dialog').getByRole('button', { name: 'Restaurar', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
     assert.equal(await fs.readFile(fake.target, 'utf8'), fake.original);
+    await assert.rejects(fs.stat(path.join(fake.game, 'zbNative.dll')), /ENOENT/);
     await page.getByRole('button', { name: 'Otimizador', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.hardware')?.textContent.includes('GB') && !document.querySelector('.spin'), { timeout: 30000 });
     assert((await page.evaluate(() => window.organic.getState())).hardware.ramGb > 0);
@@ -58,8 +62,13 @@ async function main() {
     await page.getByRole('dialog').getByRole('button', { name: 'Restaurar', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
     await page.getByRole('button', { name: 'Configurações', exact: true }).click();
+    assert.equal(await page.getByRole('switch', { name: 'Verificar atualizações ao abrir' }).getAttribute('aria-checked'), 'false');
+    assert.equal(await page.getByRole('button', { name: 'Verificar atualização', exact: true }).count(), 1);
     await page.getByRole('button', { name: 'Claro', exact: true }).click(); await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+    await page.waitForFunction(() => !document.querySelector('.spin'));
     await page.screenshot({ path: path.join(results, 'configuracoes.png'), fullPage: true });
+    await page.getByRole('heading', { name: 'Atualizações', exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(results, 'atualizacoes.png'), fullPage: true });
     await page.getByRole('button', { name: 'Escuro', exact: true }).click(); await page.waitForFunction(() => !document.querySelector('.spin'));
     await page.getByRole('button', { name: 'Sobre', exact: true }).click(); await page.getByRole('button', { name: 'Entrar com Steam', exact: true }).click();
     await page.getByRole('dialog', { name: 'Entrar com Steam' }).waitFor(); assert.equal(await page.locator('input[type=password]').count(), 0); await page.keyboard.press('Escape');

@@ -7,3 +7,6 @@ if (-not (Test-Path -LiteralPath $compiler)) { throw 'Instale o .NET Framework D
 & $compiler /nologo /target:exe /platform:x64 /optimize+ /r:System.Management.dll /r:System.Web.Extensions.dll /r:System.Core.dll ("/out:" + (Join-Path $output 'OrganicHelper.exe')) (Join-Path $root 'native\OrganicHelper.cs') (Join-Path $root 'native\PowerSession.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Falha na compilacao C#.' }
 Write-Host 'Auxiliar C# compilado.'
+& $compiler /nologo /target:exe /platform:x64 /optimize+ /r:System.Web.Extensions.dll ("/out:" + (Join-Path $output 'UpdateHelper.exe')) (Join-Path $root 'native\UpdateHelper.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Falha na compilacao do atualizador C#.' }
+Write-Host 'Atualizador C# compilado.'

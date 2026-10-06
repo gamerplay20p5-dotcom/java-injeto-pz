@@ -10,7 +10,7 @@ Utilitário desktop da Organic / DuckStudio para **revisar JARs, configurar agen
 
 ## Baixar e Instalar
 
-Na [página de downloads](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/latest), escolha **`Java-Injeto-PZ-0.2.1-Setup.exe`** para instalar ou **`Java-Injeto-PZ-0.2.1-Windows.exe`** para usar sem instalação.
+Na [página de downloads](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/latest), escolha **`Java-Injeto-PZ-0.3.0-Setup.exe`** para instalar ou **`Java-Injeto-PZ-0.3.0-Windows.exe`** para usar sem instalação.
 
 O instalador inclui o aplicativo completo, sem baixar outros arquivos. O assistente é em PTBR, instala para sua conta, permite escolher a pasta e cria atalhos com o ícone Duck. Não precisa de Node.js nem de Java global. Não instala mods, não altera o PZ e não abre o jogo ou o aplicativo automaticamente.
 
@@ -31,8 +31,9 @@ A revisão não executa o JAR. Um hash detecta alterações, mas **não certific
 ## O Que É Alterado
 
 - Agentes aprovados recebem cópias isoladas em `%APPDATA%\Java Injeto - PZ\runtime\<SHA-256>\`.
-- A ativação usa `-javaagent` no **`ProjectZomboid64.json`**, após backup integral do original e confirmação.
-- `projectzomboid.jar`, Java bundled, DLLs, saves e arquivos dos mods não são substituídos.
+- Skinwalker usa `-javaagent`; ZombieBuddy usa a ponte oficial Windows `-agentpath`, com `policy=prompt`, no **`ProjectZomboid64.json`**.
+- Com autorização, o par oficial `ZombieBuddy.jar` + `zbNative.dll` da Workshop é copiado para a raiz do PZ. Arquivos preexistentes recebem backup; restauração repõe os originais ou remove somente as novas cópias.
+- `projectzomboid.jar`, Java bundled, DLLs vanilla, saves e arquivos dos mods não são substituídos.
 - Não existe injeção em processo aberto nem instalação de `.class` avulsas. Processos do jogo detectados bloqueiam escrita e restauração.
 - Alterações externas no JSON e backups adulterados bloqueiam restauração automática, em vez de sobrescrever mudanças.
 
@@ -42,9 +43,17 @@ A revisão não executa o JAR. Um hash detecta alterações, mas **não certific
 | --- | --- | --- |
 | Skinwalker | Cópia de `SkinwalkerAgent.jar`, ativada como agente | Nenhuma |
 | [Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528) | JAR permanece na Workshop; carregamento pelo framework | ZombieBuddy |
-| [ZombieBuddy](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853) | Cópia de `ZombieBuddy.jar`, com `policy=prompt` | Nenhuma |
+| [ZombieBuddy](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853) | DLL/JAR oficiais na raiz, uma ativação nativa e `policy=prompt` | Nenhuma |
 
 Viewpoint não é um agente independente. Skinwalker entra antes de ZombieBuddy, independentemente da ordem dos cliques. Arquivos de mods não acompanham o código ou o executável.
+
+**Viewpoint não ativa terceira pessoa automaticamente.** Ative os dois mods no jogo, autorize o JAR no diálogo do ZombieBuddy, pressione `O` e então `Shift+O`. Uma autorização negada pode ser revista segurando Shift ao recarregar mods. O utilitário não apaga decisões nem libera JARs por conta própria. [Instalação oficial do ZombieBuddy](https://github.com/zed-0xff/ZombieBuddy/blob/master/doc/Installation.md).
+
+## Atualizações
+
+Em **Configurações > Atualizações**, use **Verificar atualização**, confirme o download e depois **Instalar atualização**. A consulta ao abrir é opcional e começa desligada. Não há download ou instalação silenciosa. O instalador vem somente das releases estáveis deste repositório, com tamanho e SHA-256 conferidos antes de executar.
+
+O auxiliar C# espera o aplicativo fechar e abre o assistente, sem CMD e sem abrir o PZ. Configurações, runtime e backups permanecem em AppData. Na edição portátil, essa opção instala a edição mantida e seu atalho; não substitui a cópia portátil antiga. Para continuar portátil, baixe o novo portátil na página de releases. Mods continuam pela Workshop. [Funcionamento e limites](docs/ATUALIZACOES_PTBR.md).
 
 ## Otimizador
 
@@ -68,7 +77,7 @@ npm run test:package
 
 `npm start` compila o auxiliar e a interface. `npm run dist` gera o instalador e o portátil em `release/`, com hashes em `SHA256SUMS.txt`, e mantém cópias fáceis de achar na raiz: **`Instalar Java Injeto.exe`** e **`Java Injeto.exe`**. O botão **Localizar executável** abre sua pasta, e **Criar atalho** usa o ícone Duck incorporado no arquivo.
 
-A versão `0.2.1` acrescenta instalação ao utilitário 0.2. A antiga `0.1.0` publicada era um launcher e tem outro funcionamento. Consulte as [releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases) para conferir os arquivos publicados. O executável não tem certificado de assinatura: não desative antivírus; confira procedência e `SHA256SUMS.txt`.
+A versão `0.3.0` corrige a instalação nativa Windows e acrescenta atualização consentida. A antiga `0.1.0` publicada era um launcher e tem outro funcionamento. Consulte as [releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases) para conferir os arquivos publicados. O executável não tem certificado de assinatura: não desative antivírus; confira procedência e `SHA256SUMS.txt`.
 
 ## Testes e Documentação
 
@@ -79,7 +88,7 @@ A versão `0.2.1` acrescenta instalação ao utilitário 0.2. A antiga `0.1.0` p
 | `npm run test:package` | Pacote Windows, recursos Duck, auxiliar C#, IPC, isolamento e hash do portátil |
 | `node tools/verify-portable.cjs` | Abertura/encerramento do portátil real com perfil fictício e detecção C# |
 | `npm run test:installer` | Instalação, atualização, app instalado e desinstalação NSIS com identidade isolada; dados preservados |
-| `npm run test:agents` | Agentes reais e Java do PZ em probe `-version`; não abre uma partida |
+| `npm run test:agents` | Agentes e DLL oficiais, classes reais do PZ e console redirecionado; não abre uma partida |
 
 Testes automatizados não homologam uma partida SP/MP, VOIP, anticheat ou ganhos de FPS.
 

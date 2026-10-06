@@ -2,7 +2,7 @@
 
 ## Download
 
-Use somente a [pagina oficial de releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/latest). O arquivo `Java-Injeto-PZ-0.2.1-Setup.exe` instala o aplicativo. `Java-Injeto-PZ-0.2.1-Windows.exe` e a alternativa portatil, sem instalacao.
+Use somente a [pagina oficial de releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/latest). O arquivo `Java-Injeto-PZ-0.3.0-Setup.exe` instala o aplicativo. `Java-Injeto-PZ-0.3.0-Windows.exe` e a alternativa portatil, sem instalacao.
 
 O Setup e completo/offline: nao pede login, nao baixa mods ou Java global e nao precisa de Node.js no computador do jogador. O runtime do aplicativo ja esta incluido. Mods como Skinwalker, Viewpoint e ZombieBuddy continuam pela Workshop.
 
@@ -21,16 +21,20 @@ O instalador e o aplicativo usam o icone Duck. A pasta de instalacao contem o pr
 O executavel ainda nao possui certificado Windows. SmartScreen pode exibir um aviso. Confira a origem e o SHA-256 antes de executar; nao desative o antivirus para instalar.
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Java-Injeto-PZ-0.2.1-Setup.exe
+Get-FileHash -Algorithm SHA256 .\Java-Injeto-PZ-0.3.0-Setup.exe
 ```
 
 Compare com `SHA256SUMS.txt` da mesma release. Hash confirma integridade, nao prova que um programa e seguro.
 
 ## Atualizar
 
-Feche a interface e execute o novo Setup. O instalador reconhece a instalacao anterior e substitui os arquivos do aplicativo. Preferencias, backups e runtime Java permanecem em AppData. Nao ha atualizador automatico nem download silencioso.
+Desde a 0.3.0, use **Configuracoes > Atualizacoes**: verifique, confirme o download e depois confirme instalar. O app fecha; o auxiliar C# abre o assistente, sem CMD. Reabra o atalho apos concluir. A verificacao ao abrir e opcional e comeca desligada. Nao ha download/instalacao silenciosos. [Detalhes](ATUALIZACOES_PTBR.md).
+
+Tambem pode fechar a interface e executar o novo Setup manualmente. O instalador reconhece a instalacao anterior e substitui os arquivos do aplicativo. Preferencias, backups e runtime Java permanecem em AppData. A primeira migracao da 0.2.1 para 0.3.0 exige o novo Setup, porque o aplicativo antigo nao tinha atualizador.
 
 Uma copia portatil pode usar os mesmos dados da versao instalada. Nao abra as duas ao mesmo tempo. Atualizar o utilitario nao atualiza os mods; apos uma atualizacao de JAR, revise e prepare novamente no aplicativo.
+
+O botao de atualizar da edicao portatil instala a edicao mantida e seu atalho, sem substituir o portatil antigo. Para continuar portatil, use o novo arquivo Windows.exe da release.
 
 ## Desinstalar Sem Quebrar o Jogo
 

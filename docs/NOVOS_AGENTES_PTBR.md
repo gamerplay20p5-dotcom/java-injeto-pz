@@ -8,7 +8,7 @@ Esta versão usa um catálogo distribuído com o aplicativo. Não baixa nem exec
 2. Verifique o procedimento oficial de instalação, a build alvo e o manifesto `META-INF/MANIFEST.MF`.
 3. Um JAR com `Premain-Class` apropriada pode ser candidato a `kind: "agent"`. Um JAR comum não vira agente ao mudar seu nome.
 4. Se depender de um framework para carregamento, mantenha `kind: "workshop"` e cadastre o framework em `dependencies`. O mod completo continua na Workshop.
-5. Se exigir DLL nativa de mod ou substituir classes/JAR vanilla, **não está coberto por esta versão**. A única configuração vanilla gerenciada é o JSON de inicialização, com consentimento e backup.
+5. Somente `zbNative.dll` oficial do ZombieBuddy tem ponte nativa homologada nesta versão, em `native-kit.cjs`. Outros binários nativos exigem implementação e testes próprios; não generalizar destinos nem comandos. Substituição de classes/JAR vanilla não é suportada.
 
 ## Exemplo de Registro
 

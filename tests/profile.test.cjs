@@ -27,6 +27,7 @@ async function fixture() {
     if (mod.premain) zip.addFile(mod.premain.replaceAll('.', '/') + '.class', Buffer.from('fixture'));
     zip.writeZip(source); mods.push({ ...mod, source });
   }
+  await fs.writeFile(path.join(root, 'zbNative.dll'), require('./native-fixture.cjs').dll());
   return { root, game, mods, cleanup: async () => { assert(within(os.tmpdir(), root)); await fs.rm(root, { recursive: true, force: true }); } };
 }
 
@@ -64,11 +65,12 @@ test('seleção numérica da configuração Windows e preservação do classpath
   assert(command.args.includes('-Xmx3072m'));
   assert(command.args.includes(path.join(game, '.') + path.delimiter + path.join(game, 'projectzomboid.jar')));
 });
-test('agentes usam argumentos separados, sem cópia DLL; heap opcional não muda configuração original', () => {
-  const command = commandFor(config, path.resolve('PZ'), [{ id: 'zombiebuddy', kind: 'agent', installed: 'C:\\Pasta com espaço\\ZombieBuddy.jar' }], { memoryGb: 6 }, '10.0.22631');
-  assert(command.args.includes('-javaagent:C:\\Pasta com espaço\\ZombieBuddy.jar=policy=prompt'));
+test('ZombieBuddy usa apenas a DLL oficial e politica prompt; heap preserva original', () => {
+  const command = commandFor(config, path.resolve('PZ'), [{ id: 'zombiebuddy', kind: 'agent', installed: 'C:\\Pasta com espaço\\ZombieBuddy.jar', native: {} }], { memoryGb: 6 }, '10.0.22631');
+  assert(command.args.includes(`-agentpath:${path.resolve('PZ', 'zbNative.dll')}=policy=prompt`));
   assert(command.args.includes('-Xmx6g')); assert(!command.args.includes('-Xmx3072m'));
-  assert(!command.args.some(arg => arg.includes('.dll'))); assert(config.vmArgs.includes('-Xmx3072m'));
+  assert(!command.args.some(arg => arg.startsWith('-javaagent:'))); assert(config.vmArgs.includes('-Xmx3072m'));
+  assert.throws(() => commandFor(config, '.', [{ id: 'zombiebuddy', kind: 'agent' }], {}), /DLL oficial/);
   assert.throws(() => commandFor({ ...config, vmArgs: ['-javaagent:Outro.jar'] }, '.', [], {}, '10.0.22631'));
 });
 test('manifesto identifica premain e rejeita JAR de outro agente', async () => {
@@ -105,7 +107,8 @@ test('perfil prepara apenas JARs, preserva Workshop e JSON; remoção é restrit
     assert.equal(prepared.mods.filter(mod => mod.kind === 'agent').length, 2);
     assert.equal(prepared.mods.find(mod => mod.id === 'viewpoint').installed, f.mods[1].source);
     const launch = await profiles.launchPlan(settings, { gamePath: f.game, mods: f.mods });
-    assert.equal(launch.args.filter(arg => arg.startsWith('-javaagent:')).length, 2);
+    assert.equal(launch.args.filter(arg => arg.startsWith('-javaagent:')).length, 1);
+    assert.equal(launch.args.filter(arg => arg.startsWith('-agentpath:')).length, 1);
     assert.equal(await hash(path.join(f.game, 'ProjectZomboid64.json')), original);
     await profiles.remove(); await assert.rejects(fs.stat(path.join(data, 'runtime')));
     assert.equal(await hash(path.join(f.game, 'ProjectZomboid64.json')), original);

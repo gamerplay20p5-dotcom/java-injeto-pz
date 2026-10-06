@@ -14,7 +14,7 @@ O código de um agente Java tem acesso às permissões do usuário. SHA-256 veri
 
 ## Versões e Distribuição
 
-O foco de manutenção é o código atual e a versão `0.2.0` do utilitário. A versão inicial publicada `0.1.0` era um launcher, com fluxo diferente. Esta é uma distribuição de testes, sem certificado Windows, atualizador automático ou garantia de compatibilidade universal com mods/anticheat. Confira a versão realmente publicada antes de baixar.
+O foco de manutenção é o código atual e a versão `0.3.0` do utilitário. A versão inicial publicada `0.1.0` era um launcher, com fluxo diferente. Esta é uma distribuição de testes, sem certificado Windows ou garantia de compatibilidade universal com mods/anticheat. O atualizador exige releases estáveis do repositório fixo, hash e consentimento; não instala silenciosamente. Hash publicado pelo GitHub não substitui assinatura de editor nem protege contra comprometimento do repositório.
 
 Baixe arquivos somente das [releases oficiais deste repositório](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases) e confira `SHA256SUMS.txt`. Não desative antivírus ou SmartScreen para contornar um bloqueio. Código aberto e hashes não eliminam o risco de código de terceiros.
 

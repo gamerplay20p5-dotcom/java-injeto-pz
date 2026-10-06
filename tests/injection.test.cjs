@@ -26,11 +26,12 @@ test('calibracao reserva RAM e perfis nao ultrapassam limites', () => {
   assert.throws(() => optimizerSettings({ profile: 'inventado' }));
 });
 test('JSON preserva classpath e GC; adiciona agentes em ordem com politica prompt', () => {
-  const mods = [{ id: 'skinwalker', kind: 'agent', installed: 'C:\\a\\SkinwalkerAgent.jar' }, { id: 'zombiebuddy', kind: 'agent', installed: 'C:\\b\\ZombieBuddy.jar' }, { id: 'viewpoint', kind: 'workshop' }];
+  const mods = [{ id: 'skinwalker', kind: 'agent', installed: 'C:\\a\\SkinwalkerAgent.jar' }, { id: 'zombiebuddy', kind: 'agent', installed: 'C:\\b\\ZombieBuddy.jar', native: {} }, { id: 'viewpoint', kind: 'workshop' }];
   const value = configuredJson(config, mods, settings, { ramGb: 16 });
   assert.deepEqual(value.classpath, config.classpath); assert.deepEqual(value.windows, config.windows);
   assert(value.vmArgs.includes('-Xmx6144m')); assert(value.vmArgs.includes('-XX:SoftMaxHeapSize=4608m'));
-  assert.deepEqual(value.vmArgs.filter(item => item.startsWith('-javaagent:')), ['-javaagent:C:\\a\\SkinwalkerAgent.jar', '-javaagent:C:\\b\\ZombieBuddy.jar=policy=prompt']);
+  assert.deepEqual(value.vmArgs.filter(item => item.startsWith('-javaagent:')), ['-javaagent:C:\\a\\SkinwalkerAgent.jar']);
+  assert(value.vmArgs.includes(`-agentpath:${path.resolve('zbNative.dll')}=policy=prompt`));
   assert(config.vmArgs.includes('-Xmx3072m'));
   const untouched = { ...config, vmArgs: [...config.vmArgs, '-XX:SoftMaxHeapSize=2048m'] };
   assert.deepEqual(configuredJson(untouched, [], { memoryGb: 0, optimizer: optimizerSettings({ memoryAuto: false, jvm: false }) }, null), untouched);
@@ -82,4 +83,14 @@ test('preload nao expoe abertura de jogo e processo nativo nunca invoca Steam', 
   assert(!source.includes("'launch'")); assert(!source.includes("'launchPlan'"));
   const helper = await fs.readFile(path.join(__dirname, '../native/OrganicHelper.cs'), 'utf8');
   assert(!helper.includes('steam://')); assert(!helper.includes('rungameid')); assert(!helper.includes('EmptyWorkingSet'));
+});
+
+test('restauracao sem diferenca de bytes tambem libera remocao do perfil', async () => {
+  const f = await fixture(); try {
+    const original = JSON.stringify(config, null, 2) + '\n'; await fs.writeFile(f.target, original);
+    const options = { memoryGb: 0, optimizer: optimizerSettings({ memoryAuto: false, jvm: false }) };
+    const plan = await f.service.review(f.game, [], options, null); await f.service.apply(plan.token);
+    const receipt = await f.service.receipt(); assert.equal(receipt.installedHash, receipt.originalHash);
+    assert.equal((await f.service.restore()).status, 'restored');
+  } finally { await f.cleanup(); }
 });

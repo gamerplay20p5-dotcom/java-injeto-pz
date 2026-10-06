@@ -6,6 +6,7 @@ const { inspectJar } = require('./jar.cjs');
 const { validateGame } = require('./discovery.cjs');
 const { exists, boundedRead, hash, within, hasLooseClasses, atomicJson } = require('./files.cjs');
 const { optimizerSettings } = require('./optimizer.cjs');
+const { inspectNative } = require('./native-kit.cjs');
 
 function dependencies(selected, catalog) {
   const byId = new Map(catalog.map(mod => [mod.id, mod]));
@@ -51,6 +52,7 @@ function validateSettings(value, catalog) {
   }
   result.theme = value.theme === 'light' ? 'light' : 'dark';
   result.reduceMotion = value.reduceMotion === true;
+  result.checkUpdates = value.checkUpdates === true;
   result.optimizer = optimizerSettings(value.optimizer);
   return result;
 }
@@ -84,10 +86,16 @@ function commandFor(config, gamePath, prepared, settings, release) {
   if (unmanaged.length) throw new Error('O JSON vanilla cont\u00e9m outro agente Java. Revise essa instala\u00e7\u00e3o antes de combinar patches.');
   vm = vm.filter(arg => !/^-(javaagent|agentlib|agentpath):/.test(arg));
   if (settings.memoryGb > 0) vm = vm.filter(arg => !/^-Xm[xs]/.test(arg)).concat(`-Xmx${settings.memoryGb}g`);
-  for (const mod of prepared) if (mod.kind === 'agent') vm.push(`-javaagent:${mod.installed}${mod.id === 'zombiebuddy' ? '=policy=prompt' : ''}`);
+  for (const mod of prepared) if (mod.kind === 'agent') vm.push(agentArgument(mod, gamePath));
   const cp = config.classpath.map(item => path.isAbsolute(item) ? item : path.join(gamePath, item)).join(path.delimiter);
   return { executable: path.join(gamePath, 'jre64/bin/java.exe'), cwd: gamePath,
     args: [...vm, '-cp', cp, 'zombie.gameStates.MainScreenState'] };
+}
+
+function agentArgument(mod, gamePath) {
+  if (mod.id !== 'zombiebuddy') return `-javaagent:${mod.installed}`;
+  if (!mod.native) throw new Error('Prepare ZombieBuddy novamente: a instalacao Windows exige a DLL oficial.');
+  return `-agentpath:${path.resolve(gamePath, 'zbNative.dll')}=policy=prompt`;
 }
 
 class Profiles {
@@ -115,6 +123,9 @@ class Profiles {
           || typeof mod.source !== 'string' || typeof mod.installed !== 'string') throw new Error('Componente de perfil invalido.');
         const expected = mod.kind === 'agent' ? path.join(this.root, 'runtime', mod.hash, known.jarName) : mod.source;
         if (mod.installed !== expected) throw new Error('Destino de perfil invalido.');
+        if (mod.native && (mod.id !== 'zombiebuddy' || !/^[a-f0-9]{64}$/.test(mod.native.hash)
+          || mod.native.installed !== path.join(this.root, 'runtime', mod.native.hash, 'zbNative.dll')
+          || mod.native.source !== path.join(path.dirname(mod.source), 'zbNative.dll'))) throw new Error('Kit nativo invalido.');
         ids.add(mod.id);
       }
       return value;
@@ -130,7 +141,9 @@ class Profiles {
       if (!mod?.source) throw new Error(`${this.catalog.find(item => item.id === id)?.name}: JAR n\u00e3o encontrado. Baixe pela Workshop ou selecione o arquivo.`);
       const info = await inspectJar(mod.source, mod.kind === 'agent' ? mod.premain : null);
       const installed = mod.kind === 'agent' ? path.join(this.root, 'runtime', info.hash, mod.jarName) : info.source;
-      mods.push({ id, name: mod.name, kind: mod.kind, ...info, installed });
+      const native = id === 'zombiebuddy' ? await inspectNative(path.join(path.dirname(info.source), 'zbNative.dll')) : null;
+      if (native) native.installed = path.join(this.root, 'runtime', native.hash, 'zbNative.dll');
+      mods.push({ id, name: mod.name, kind: mod.kind, ...info, installed, ...(native ? { native } : {}) });
     }
     const token = crypto.randomUUID();
     this.preview = { token, mods, gamePath, selected: settings.selected,
@@ -138,6 +151,7 @@ class Profiles {
     return { token, mods, gamePath, warnings: [
       'Agentes Java podem executar c\u00f3digo com as permiss\u00f5es do seu usu\u00e1rio. SHA-256 identifica o arquivo; n\u00e3o certifica sua seguran\u00e7a.',
       'O utilitario nao ativa mods Lua. Ative os IDs e dependencias pela tela de mods ou pelo servidor.',
+      ...(ids.includes('zombiebuddy') ? ['Windows: ZombieBuddy.jar e zbNative.dll oficiais serao revisados. A injecao copia o par para a raiz do PZ com backup; policy=prompt permanece ativo. Autorize Viewpoint no dialogo do ZombieBuddy ao abrir o jogo.'] : []),
       ...(ids.includes('skinwalker') && ids.includes('zombiebuddy') ? ['Skinwalker + ZombieBuddy: coexist\u00eancia ainda requer teste em um save descart\u00e1vel.'] : [])
     ] };
   }
@@ -146,7 +160,7 @@ class Profiles {
     if (!plan || token !== plan.token || Date.now() > plan.expires || crypto.createHash('sha256').update(JSON.stringify(settings)).digest('hex') !== plan.settingsHash)
       throw new Error('Revis\u00e3o expirada ou configura\u00e7\u00e3o alterada. Revise novamente.');
     this.preview = null;
-    for (const mod of plan.mods) {
+    for (const mod of plan.mods.flatMap(mod => [mod, ...(mod.native ? [{ ...mod.native, kind: 'agent' }] : [])])) {
       if (await hash(mod.source) !== mod.hash) throw new Error('O JAR foi atualizado ap\u00f3s sua revis\u00e3o. Revise o novo arquivo.');
       if (mod.kind !== 'agent') continue;
       await fs.mkdir(path.dirname(mod.installed), { recursive: true });
@@ -177,6 +191,12 @@ class Profiles {
       if (current?.error) throw new Error(`${mod.name}: JAR invalido; revise sua origem.`);
       if (current?.source !== mod.source || !await exists(mod.source) || await hash(mod.source) !== mod.hash) throw new Error(`${mod.name}: origem alterada; revise o novo JAR antes de aplicar.`);
       if (mod.kind === 'agent' && (!within(await fs.realpath(this.root), await fs.realpath(mod.installed)) || await hash(mod.installed) !== mod.hash)) throw new Error('C\u00f3pia preparada alterada. Remova e prepare novamente.');
+      if (mod.id === 'zombiebuddy') {
+        if (!mod.native) throw new Error('Prepare ZombieBuddy novamente para incluir a DLL oficial.');
+        const source = await inspectNative(path.join(path.dirname(mod.source), 'zbNative.dll'));
+        if (source.hash !== mod.native.hash || !within(await fs.realpath(this.root), await fs.realpath(mod.native.installed))
+          || await hash(mod.native.installed) !== mod.native.hash) throw new Error('DLL ZombieBuddy alterada; revise o kit novamente.');
+      }
     }
     if (await hasLooseClasses(path.join(gamePath, 'zombie'))) throw new Error('Foram encontradas classes soltas em uma pasta zombie do jogo. Revise os patches antigos antes de aplicar; elas podem sobrescrever o JAR vanilla.');
     const config = JSON.parse(await boundedRead(path.join(gamePath, 'ProjectZomboid64.json')));
@@ -195,4 +215,4 @@ class Profiles {
   }
 }
 
-module.exports = { dependencies, validateSettings, windowsArgs, commandFor, managedAgent, Profiles };
+module.exports = { dependencies, validateSettings, windowsArgs, commandFor, agentArgument, managedAgent, Profiles };

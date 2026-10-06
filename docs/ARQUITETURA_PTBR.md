@@ -14,6 +14,9 @@ Electron hospeda a janela e diálogos. C# executa hardware, detecção de proces
 | `src/main/files.cjs` | Leituras limitadas, hash por stream, escrita atômica e contenção de caminhos |
 | `src/main/profile.cjs` | Preferências e preparação das cópias aprovadas |
 | `src/main/injection.cjs` | Revisão, backup integral, atualização JSON e restauração |
+| `src/main/native-kit.cjs` | Par DLL/JAR oficial ZombieBuddy, cabeçalho PE, hashes, snapshots e rollback |
+| `src/main/updater.cjs` | Releases GitHub fixas, streaming limitado, SHA-256 e consentimento |
+| `native/UpdateHelper.cs` | Revalidação, espera de saída do app e execução do instalador sem CMD |
 | `src/main/optimizer.cjs` | Perfis, calibração, IPC nativo e ciclo do auxiliar |
 | `native/OrganicHelper.cs` | Consultas Windows, monitor e restauração temporária |
 | `native/PowerSession.cs` | Plano clonado/restauração, com executor testável |
@@ -43,6 +46,10 @@ Classpath, classe principal, flags nativas e coletor Windows são preservados. H
 `restore()` exige hash do backup e JSON atual reconhecido. `previousHash` permite recuperar uma gravação interrompida. Mudanças externas bloqueiam restauração para não perder configuração manual. Remoção do runtime é recusada enquanto houver referências ativas ou estado desconhecido.
 
 O jogo usa os agentes quando iniciado pelo próprio launcher vanilla/Steam que lê `ProjectZomboid64.json`. O utilitário não modifica opções Steam, não substitui `projectzomboid.jar` e não captura saída do jogo.
+
+ZombieBuddy Windows é uma exceção nativa explícita: `zbNative.dll` ajusta a busca das bibliotecas do Java bundled e carrega `ZombieBuddy.jar` da raiz do jogo. A revisão inclui ambos; a ativação é única por `-agentpath` com `policy=prompt`. Não instalar somente a DLL em AppData: ela espera o JAR no diretório do jogo. Reaplicação conserva backups anteriores. Journal registra hashes original/instalado/anterior de cada arquivo; rollback não sobrescreve alterações externas. `ZombieBuddy.jar.new` pendente bloqueia instalação para não escapar da revisão. Nenhuma DLL é executada para revisá-la.
+
+O atualizador não usa a rede do renderer. Main consulta somente a release estável mais recente do repositório fixo, rejeita downgrade/prerelease, exige asset de nome/URL exatos e digest SHA-256 do GitHub. Download é streaming, máximo 256 MiB, cinco minutos, com cancelamento e conteúdo/tamanho conferidos. Auxiliar C# copiado por hash aguarda o app encerrar e revalida a tarefa antes de abrir o NSIS por usuário. Não usa shell nem abre o jogo. Veja `ATUALIZACOES_PTBR.md` para limites de assinatura e portátil.
 
 ## Auxiliar C#
 

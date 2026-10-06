@@ -1,18 +1,18 @@
 # Testes e Limitações
 
-## Validação da 0.2.1
+## Validação da 0.3.0
 
 Ambiente de desenvolvimento Windows, 2026-10-05. Nenhuma partida ou login real foi aberto para executar os testes.
 
 | Teste | Escopo |
 | --- | --- |
-| `npm test` | 50 regressões aprovadas: catálogo, caminhos, cópias, OpenID, JSON, instalador e C# |
+| `npm test` | 68 regressões aprovadas: catálogo, caminhos, cópias, OpenID, JSON, DLL/JAR, rollback, atualizador e C# |
 | `tests/NativeRegression.cs` | Quatro cenários de energia com executor Windows simulado |
 | `npm run test:ui` | Sete abas, três componentes, preparação/injeção/restauração real em pasta fictícia, clipboard, hardware, temas e janelas compactas |
 | `npm run test:package` | Executável empacotado, recursos Duck, auxiliar C#, IPC, sandbox e hash da distribuição |
 | `node tools/verify-portable.cjs` | Portátil real aberto com perfil isolado, interface, hardware C# e encerramento limpo sem abrir PZ |
 | `npm run test:installer` | NSIS real com identidade descartável: instalação, abertura do app instalado, reinstalação, exclusão de AppData bloqueada e desinstalação; sentinelas e dados/atalho de produção preservados |
-| `npm run test:agents` | Probe separado, exige PZ/agentes reais; não homologa uma partida |
+| `npm run test:agents` | Agentes reais isolados/combinados, ponte DLL oficial, classes do PZ, encoding e console redirecionado; não homologa uma partida |
 
 Fixtures usam JARs sintéticos e uma configuração cliente descartável. O teste faz a escrita JSON e sua reversão **nessa instalação falsa**, verifica backup byte a byte e nunca executa os JARs falsos. Pacote usa `--user-data-dir` separado. Exclusões são restritas a diretórios temporários próprios.
 
@@ -29,7 +29,7 @@ O monitor C# foi compilado e testado aguardando uma pasta sem jogo executado, co
 - Energia/prioridade em computadores com políticas e permissões diferentes; recuperação após falha abrupta do helper.
 - Instalação em outro disco, caminhos acentuados, SmartScreen, antivírus e teste prolongado de memória.
 
-Probe de premain não demonstra funcionamento completo de um mod. Nenhum benchmark comparativo foi concluído nesta etapa; não declarar FPS garantido ou ausência absoluta de leaks.
+Verificação de classes/premain não demonstra funcionamento completo de um mod. Nenhum benchmark comparativo foi concluído nesta etapa; não declarar FPS garantido ou ausência absoluta de leaks. Atualizador possui testes de hash, tamanho, origem, downgrade, confirmação e validação C# sem executar instalador recebido pela rede. O teste NSIS real usa identidade isolada; não equivale a homologação de atualização sobre a instalação do usuário.
 
 ## Roteiro Manual
 

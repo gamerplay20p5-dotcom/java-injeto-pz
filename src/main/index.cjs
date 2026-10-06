@@ -12,12 +12,14 @@ const { within, exists } = require('./files.cjs');
 const { SteamAuth } = require('./steam-auth.cjs');
 const { Injection } = require('./injection.cjs');
 const { NativeOptimizer, recommendedHeap } = require('./optimizer.cjs');
+const { inspectNative } = require('./native-kit.cjs');
+const { Updater } = require('./updater.cjs');
 
 app.setName('Java Injeto - PZ');
 if (!app.isPackaged && process.env.ORGANIC_TEST_DATA) app.setPath('userData', path.resolve(process.env.ORGANIC_TEST_DATA));
 protocol.registerSchemesAsPrivileged([{ scheme: 'organic', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const origin = 'organic://launcher';
-let window, profiles, settings, discovery, auth, injection, optimizer, hardware = null, currentJob = null;
+let window, profiles, settings, discovery, auth, injection, optimizer, updater, hardware = null, currentJob = null;
 let progress = '';
 const history = [];
 
@@ -36,7 +38,8 @@ async function state() {
   const ids = dependencies(settings.selected, catalog);
   const mods = (discovery?.mods || catalog.map(mod => ({ ...mod, source: null, status: 'missing' }))).map(mod => {
     const previous = prepared?.mods.find(item => item.id === mod.id);
-    const isPrepared = previous && previous.hash === mod.hash && previous.source === mod.source;
+    const isPrepared = previous && previous.hash === mod.hash && previous.source === mod.source
+      && (mod.id !== 'zombiebuddy' || (previous.native && previous.native.hash === mod.native?.hash));
     return { ...mod, selected: ids.includes(mod.id), automatic: ids.includes(mod.id) && !settings.selected.includes(mod.id),
       installed: previous?.installed || null,
       status: mod.error ? 'invalid' : !mod.source ? 'missing' : isPrepared ? 'ready' : previous ? 'changed' : 'found' };
@@ -47,7 +50,8 @@ async function state() {
   return { version: app.getVersion(), settings, game: discovery?.gamePath ? { path: discovery.gamePath, java: path.join(discovery.gamePath, 'jre64/bin/java.exe') } : null,
     libraries: discovery?.libraries || [], workshopPath, mods, busy: currentJob, progress, auth: auth.state, history,
     runtimePath: path.join(app.getPath('userData'), 'runtime'), physicalMemoryGb: Math.round(os.totalmem() / 1024 ** 3),
-    platform: process.platform, profileError, injection: injected, hardware,
+    platform: process.platform, profileError, injection: injected, hardware, update: updater.state,
+    portable: Boolean(process.env.PORTABLE_EXECUTABLE_FILE),
     optimizer: await optimizer.status(), recommendedGb: recommendedHeap(hardware, settings.optimizer.profile) };
 }
 
@@ -64,7 +68,10 @@ async function scan() {
   discovery = await discover(settings, catalog, message => { progress = message; void emit(); });
   for (const mod of discovery.mods) {
     if (!mod.source) continue;
-    try { Object.assign(mod, await inspectJar(mod.source, mod.kind === 'agent' ? mod.premain : null)); }
+    try {
+      Object.assign(mod, await inspectJar(mod.source, mod.kind === 'agent' ? mod.premain : null));
+      if (mod.id === 'zombiebuddy') mod.native = await inspectNative(path.join(path.dirname(mod.source), 'zbNative.dll'));
+    }
     catch (error) { mod.error = error.message; }
   }
   injection.preview = null;
@@ -89,6 +96,10 @@ async function setup() {
   settings = await profiles.load();
   injection = new Injection(app.getPath('userData'));
   optimizer = new NativeOptimizer(app.isPackaged ? path.join(process.resourcesPath, 'native/OrganicHelper.exe') : path.join(app.getAppPath(), 'native/bin/OrganicHelper.exe'), app.getPath('userData'));
+  updater = new Updater(app.getPath('userData'), app.getVersion(), () => {
+    // Download progress must not repeatedly hash installed game files.
+    if (window && !window.isDestroyed()) window.webContents.send('organic:update', updater.state);
+  });
   auth = new SteamAuth(url => shell.openExternal(url), () => void emit());
   const dist = path.join(app.getAppPath(), 'dist');
   protocol.handle('organic', async request => {
@@ -113,6 +124,17 @@ async function setup() {
   window.on('close', () => auth.cancel());
 
   handler('getState', state);
+  handler('checkUpdate', () => exclusive('update-check', () => updater.check()));
+  handler('downloadUpdate', () => exclusive('update-download', () => updater.download()));
+  handler('cancelUpdate', () => updater.cancel());
+  handler('installUpdate', token => exclusive('update-install', async () => {
+    if (!app.isPackaged) throw new Error('Instale atualizacoes usando o executavel distribuido.');
+    if (['active', 'watching', 'stopping'].includes((await optimizer.status()).status)) throw new Error('Restaure a sessao do Otimizador antes de atualizar.');
+    const helper = path.join(process.resourcesPath, 'native/UpdateHelper.exe');
+    await updater.install(token, helper, process.pid);
+    setTimeout(() => app.quit(), 500);
+    return true;
+  }));
   handler('scan', () => exclusive('scan', scan));
   handler('saveSettings', value => exclusive('settings', async () => {
     const previous = settings; settings = await profiles.save(value); injection.preview = null;
@@ -207,11 +229,14 @@ async function setup() {
   const refresh = setInterval(() => { if (window && !window.isDestroyed() && window.isVisible()) void emit(); }, 10000);
   refresh.unref();
   void exclusive('scan', scan).catch(error => { note(error.message, 'error'); void emit(); });
+  if (settings.checkUpdates) setTimeout(() => {
+    if (!currentJob) void exclusive('update-check', () => updater.check()).catch(error => note(error.message, 'warning'));
+  }, 20000).unref();
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { window?.show(); window?.focus(); });
   app.whenReady().then(setup).catch(error => { dialog.showErrorBox('Java Injeto - PZ', error.message); app.quit(); });
-  app.on('window-all-closed', () => { auth?.logout(); app.quit(); });
+  app.on('window-all-closed', () => { auth?.logout(); updater?.cancel(); app.quit(); });
 }

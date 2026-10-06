@@ -1,6 +1,6 @@
 {
   "name": "java-injeto-pz",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Utilitario desktop PTBR para injecao reversivel de agentes Java e otimizacao do Project Zomboid, sem abrir o jogo.",
   "author": "Organic",
@@ -46,7 +46,7 @@
     "artifactName": "Java-Injeto-PZ-${version}-Windows.${ext}",
     "directories": { "output": "release" },
     "files": ["dist/**", "src/main/**", "src/preload.cjs", "catalog.json", "package.json", "LICENSE", "docs/TERCEIROS_PTBR.md", "assets/**"],
-    "extraResources": [{ "from": "native/bin/OrganicHelper.exe", "to": "native/OrganicHelper.exe" }],
+    "extraResources": [{ "from": "native/bin/OrganicHelper.exe", "to": "native/OrganicHelper.exe" }, { "from": "native/bin/UpdateHelper.exe", "to": "native/UpdateHelper.exe" }],
     "asar": true,
     "win": { "target": ["portable", "nsis"], "icon": "assets/app.ico", "signExecutable": false },
     "portable": { "requestExecutionLevel": "user" },

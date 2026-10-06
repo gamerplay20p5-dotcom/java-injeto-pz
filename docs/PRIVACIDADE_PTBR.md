@@ -6,7 +6,9 @@
 | --- | --- | --- |
 | Caminhos PZ/Steam/mods, seleção, tema, memória e animações | `settings.json` na pasta local do aplicativo | Até o usuário remover ou alterar |
 | Origem/destino, nomes e SHA-256 dos JARs preparados | `prepared.json` | Até preparar outro perfil ou remover JARs |
-| Cópias dos agentes | `runtime/<sha256>/*.jar` | Até remover JARs |
+| Cópias dos agentes e DLL revisada | `runtime/<sha256>/` | Até remover o perfil |
+| Backups nativos e registro de injeção | `backups/*.native` e `injection.json` | Preservados para restauração |
+| Instalador e auxiliar de atualização | `updates/` | Cópias locais por hash; nenhuma conta ou telemetria |
 | JSON original e registro de injeção | `backups/*.json` e `injection.json` | Preservados para restauração; não há limpeza automática |
 | Preferências de otimização, estado e plano de energia original | `settings.json`, `optimizer/status.json`, `optimizer/power.json` | Estado é sobrescrito, sem histórico crescente; journal de energia é removido após recuperação |
 | Auxiliar C# próprio | `native-runtime/<sha256>/OrganicHelper.exe` | Até limpeza explícita; permite fechar o portátil sem interromper o monitor |
@@ -25,6 +27,8 @@ O login abre `steamcommunity.com` no navegador padrão. O callback usa apenas `1
 
 Não operamos backend próprio, telemetria, banco de usuários, consulta de perfil, avatar, amigos ou inventário. Não recebemos senha ou Steam Guard. Cookies de login pertencem ao navegador/Steam, não a uma WebView de login do aplicativo. O histórico do navegador, a Steam e o Windows têm políticas próprias de armazenamento; o launcher não controla esses sistemas.
 
+Atualizações consultam a API pública do GitHub e baixam releases/CDN oficiais por HTTPS, sem token, SteamID, caminhos, hardware ou logs na requisição. GitHub recebe os dados normais da conexão, como IP. A consulta automática ao abrir é opcional; download e instalação sempre exigem comando explícito.
+
 OpenID necessariamente retorna um identificador público e parâmetros temporários de autenticação. Assim, a descrição correta é **não persistimos dados de conta e não coletamos credenciais**, não "nenhuma informação existe em qualquer momento". Não há promessa de apagar criptograficamente RAM, pagefile ou dumps do sistema operacional.
 
 ## Agentes e Mods
@@ -39,6 +43,8 @@ O launcher não grava voz. **Skinwalker e outros mods podem ter funcionalidades 
 
 Somente após revisão/confirmação, `ProjectZomboid64.json` recebe agentes conhecidos e ajustes JVM selecionados, com cópia integral do original. Restauração verifica hashes e recusa alterações externas. Não representa um patch do JAR vanilla.
 
+A única exceção nativa de mod homologada é `zbNative.dll` do ZombieBuddy, acompanhada de `ZombieBuddy.jar`: ambos vêm da instalação Workshop local e vão para a raiz do PZ com backup/reversão. Cabeçalho PE x64 e SHA-256 não verificam autoria, assinatura ou ausência de código malicioso. Não carregamos a DLL para revisá-la.
+
 Sessão nativa opcional lê hardware, RAM e processos locais para detectar o cliente PZ. Ajusta somente prioridade dele e um plano de energia clonado. Não envia inventário de hardware/processos. Apps permitidos só recebem pedido de fechamento normal após escolha/confirmação; não são encerrados à força.
 
 Fechar a interface encerra Electron. O helper explicitamente ativado pode continuar sem CMD, com estado local limitado. Restauro de energia após uma interrupção exige reabrir a ferramenta e usar Restaurar sessão; não prometemos execução de finally quando o Windows ou o processo é encerrado abruptamente.
@@ -46,7 +52,7 @@ Fechar a interface encerra Electron. O helper explicitamente ativado pode contin
 ## O Que Não Alteramos
 
 - JAR vanilla e opções de inicialização Steam.
-- DLLs de mods, Java global do Windows, Registro para instalar patches e classes soltas no jogo.
+- DLLs vanilla, Java global do Windows, Registro para instalar patches e classes soltas no jogo.
 - Lista de mods ativos, mapa, saves, inventário e configurações do servidor.
 - Firewall, antivírus, permissões de administrador, memória de processos alheios ou plano de energia original.
 

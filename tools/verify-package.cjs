@@ -19,6 +19,11 @@ async function main() {
   assert(!files.some(file => /\.(jar|class|lua|dll)$/i.test(file)), 'pacote do app nao inclui arquivos dos mods');
   for (const required of ['/src/main/index.cjs', '/src/preload.cjs', '/catalog.json', '/dist/index.html', '/LICENSE', '/docs/TERCEIROS_PTBR.md', '/assets/app.ico', '/assets/Logo_Organic.png']) assert(files.includes(required));
   assert((await fs.stat(path.join(release, 'win-unpacked/resources/native/OrganicHelper.exe'))).size > 4096);
+  assert((await fs.stat(path.join(release, 'win-unpacked/resources/native/UpdateHelper.exe'))).size > 4096);
+  for (const name of ['index', 'updater', 'native-kit', 'injection', 'profile']) {
+    const file = path.join('src', 'main', `${name}.cjs`);
+    assert.deepEqual(asar.extractFile(archive, file), await fs.readFile(path.join(root, file)), `pacote inclui fonte atual: ${name}`);
+  }
   assert(asar.extractFile(archive, 'LICENSE').toString().startsWith('MIT License'), 'licenca propria acompanha o pacote');
   const packagedCatalog = JSON.parse(asar.extractFile(archive, 'catalog.json').toString());
   assert.equal(packagedCatalog.mods.length, 3);

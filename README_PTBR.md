@@ -31,13 +31,13 @@ Preparação apenas copia e valida. **A injeção é uma segunda etapa** que gra
   native-runtime\<SHA-256>\     Auxiliar próprio, persistente após fechar o portátil
 ```
 
-Na pasta do jogo, apenas `ProjectZomboid64.json` é alterado com consentimento. JAR vanilla, JVM, saves, DLLs e mods ficam intactos. Destinos reais aparecem no painel; não se presume que todo componente pertença a `media/java`.
+Na pasta do jogo, `ProjectZomboid64.json` é alterado com consentimento. ZombieBuddy no Windows também exige o par oficial `ZombieBuddy.jar` + `zbNative.dll` na raiz, copiado da Workshop com backup dos arquivos anteriores. Skinwalker continua como javaagent isolado; ZombieBuddy usa apenas agentpath, com policy=prompt. JAR vanilla, JVM, saves, DLLs vanilla e mods ficam intactos. Destinos reais aparecem na revisão.
 
-Para reverter, feche o jogo e use **Backup > Restaurar backup**. O JSON volta aos bytes originais. Depois, **Remover cópias Java** permite apagar somente o runtime do utilitário. A remoção é bloqueada enquanto houver referências ativas ou configuração alterada externamente.
+Para reverter, feche o jogo e use **Backup > Restaurar backup**. JSON e par nativo voltam aos originais; os novos arquivos sem antecessor são removidos da raiz do PZ. Depois, **Remover cópias Java** permite apagar somente o runtime do utilitário. A remoção é bloqueada enquanto houver referências ativas ou configuração alterada externamente.
 
 Se uma atualização Steam ou edição manual mudar o JSON, a ferramenta não o sobrescreve automaticamente. Preserve a configuração atual e o backup e revise as diferenças. Não apague backups para contornar essa proteção. Antes de mover/remover a pasta de dados do aplicativo, restaure a instalação: os agentes são referenciados por caminho absoluto.
 
-Backups anteriores permanecem disponíveis na pasta própria. São pequenos arquivos JSON; não há limpeza automática que possa apagar seu original.
+Backups anteriores permanecem disponíveis na pasta própria, incluindo JSON e binários nativos. Não há limpeza automática que possa apagar seu original.
 
 ## Atualização dos Mods
 
@@ -63,7 +63,9 @@ O instalador cria atalhos no menu Iniciar e na área de trabalho. O ícone super
 
 O arquivo possui o ícone Duck incorporado. O executável ainda não tem certificado de assinatura Windows; verifique a procedência, não desative antivírus.
 
-Para atualizar a instalação, feche o utilitário e execute o novo Setup. Preferências e backups são mantidos. Para remover, primeiro restaure a injeção e a sessão do Otimizador pelo aplicativo e depois desinstale em **Configurações do Windows > Aplicativos**. AppData é preservado, inclusive cópias Java ainda usadas pelo jogo. [Manual do instalador](docs/INSTALACAO_PTBR.md).
+Para atualizar desde a 0.3.0, use **Configurações > Atualizações**: verifique, confirme o download e confirme instalar. Hash é conferido e o auxiliar C# espera o app fechar antes de abrir o assistente, sem CMD. Preferências e backups são mantidos. A consulta ao abrir é opcional e começa desligada; mods continuam pela Workshop. No portátil, esse fluxo instala a edição mantida sem substituir o portátil antigo. A migração inicial da 0.2.1 exige baixar o Setup novo uma vez. [Manual](docs/ATUALIZACOES_PTBR.md).
+
+Para remover, primeiro restaure a injeção e a sessão do Otimizador pelo aplicativo e depois desinstale em **Configurações do Windows > Aplicativos**. AppData é preservado, inclusive cópias Java ainda usadas pelo jogo. [Manual do instalador](docs/INSTALACAO_PTBR.md).
 
 ## Steam e Privacidade
 
@@ -78,7 +80,7 @@ Dados locais incluem preferências, caminhos, hashes e backups. O utilitário n�
 | Pasta não encontrada | Selecione a instalação completa do cliente Windows, não o dedicado. |
 | JAR não encontrado | Verifique o download; selecione pasta adicional ou Localizar JAR nos detalhes do agente. |
 | Preparado, mas agente não carrega | Falta a etapa Injetar agora; confirme também os mods ativos dentro do jogo. |
-| Viewpoint não funciona | Mantenha mod completo, ZombieBuddy ativo e aprovações `policy=prompt`. |
+| Viewpoint não funciona | Revise o kit DLL/JAR, ative ambos os mods e autorize Viewpoint no ZombieBuddy. O ativa; Shift+O alterna primeira/terceira pessoa. |
 | Falha de escrita | Feche o PZ; confirme permissões da pasta e eventual bloqueio pelo antivírus. Não execute como administrador por padrão. |
 | Configuração alterada externamente | Preserve atual e backup; revise diferenças antes de restaurar. |
 | Monitor interrompido | Use Restaurar sessão para recuperar energia antes de reativar. |
@@ -101,7 +103,7 @@ node tools/verify-portable.cjs
 npm run test:installer
 ```
 
-`test:ui` e `test:package` usam jogo e JARs fictícios em diretórios temporários. Não escrevem na instalação real. `test:agents` usa o Java e agentes reais somente em probe `-version`; exige os componentes locais. `npm run dev` é uma prévia visual sem operações nativas.
+`test:ui` e `test:package` usam jogo, JARs e DLL fictícios em diretórios temporários. Não escrevem na instalação real. `test:agents` usa Java/agentes/DLL oficiais para verificar classes reais com console redirecionado, sem abrir o jogo; exige componentes locais. `npm run dev` é uma prévia visual sem operações nativas.
 
 `npm run dist` gera instalador offline e portátil em `release/`, publica hashes e copia ambos para a raiz como `Instalar Java Injeto.exe` e `Java Injeto.exe`. Não inclua JARs de autores na distribuição. Feche a versão que será sobrescrita antes de recompilar; uma pasta de saída alternativa evita mexer em um executável aberto.
 
