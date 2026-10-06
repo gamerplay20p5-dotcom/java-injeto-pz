@@ -7,7 +7,7 @@ import logo from '../../assets/Logo_Organic.png';
 
 const native = Boolean(window.organic);
 const defaults = { profile: 'balanced', memoryAuto: true, jvm: true, priority: false, power: false, monitor: false };
-const initial = { version: '0.2.0', settings: { gamePath: null, steamPath: null, modRoots: [], overrides: {}, selected: [], memoryGb: 0, theme: 'dark', reduceMotion: false, optimizer: defaults },
+const initial = { version: '0.2.1', settings: { gamePath: null, steamPath: null, modRoots: [], overrides: {}, selected: [], memoryGb: 0, theme: 'dark', reduceMotion: false, optimizer: defaults },
   mods: catalog.mods.map(mod => ({ ...mod, status: 'missing' })), libraries: [], busy: null, progress: '', game: null, history: [],
   injection: { status: 'none' }, optimizer: { status: 'idle' }, hardware: null, auth: { status: 'offline' } };
 const labels = { missing: ['Não encontrado', 'muted'], found: ['Revisão pendente', 'amber'], ready: ['Pronto', 'green'], changed: ['Revisão pendente', 'amber'], invalid: ['Erro', 'red'], injected: ['Injetado', 'green'] };

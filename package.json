@@ -1,6 +1,6 @@
 {
   "name": "java-injeto-pz",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Utilitario desktop PTBR para injecao reversivel de agentes Java e otimizacao do Project Zomboid, sem abrir o jogo.",
   "author": "Organic",
@@ -22,8 +22,9 @@
     "test:ui": "node tools/verify-ui.cjs",
     "test:agents": "node tools/verify-agents.cjs",
     "test:package": "node tools/verify-package.cjs",
+    "test:installer": "node tools/verify-installer.cjs",
     "pack": "npm run build:native && npm run build && electron-builder --win dir",
-    "dist": "npm run build:native && npm run build && electron-builder --win portable"
+    "dist": "npm run build:native && npm run build && electron-builder --win portable nsis --x64 && node tools/publish-local-artifacts.cjs"
   },
   "dependencies": {
     "adm-zip": "0.6.1",
@@ -47,7 +48,25 @@
     "files": ["dist/**", "src/main/**", "src/preload.cjs", "catalog.json", "package.json", "LICENSE", "docs/TERCEIROS_PTBR.md", "assets/**"],
     "extraResources": [{ "from": "native/bin/OrganicHelper.exe", "to": "native/OrganicHelper.exe" }],
     "asar": true,
-    "win": { "target": "portable", "icon": "assets/app.ico", "signExecutable": false },
-    "portable": { "requestExecutionLevel": "user" }
+    "win": { "target": ["portable", "nsis"], "icon": "assets/app.ico", "signExecutable": false },
+    "portable": { "requestExecutionLevel": "user" },
+    "nsis": {
+      "artifactName": "Java-Injeto-PZ-${version}-Setup.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["pt_BR"],
+      "displayLanguageSelector": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Java Injeto",
+      "installerIcon": "assets/app.ico",
+      "uninstallerIcon": "assets/app.ico",
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false,
+      "packElevateHelper": false,
+      "include": "build/installer.nsh"
+    }
   }
 }

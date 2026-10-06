@@ -1,0 +1,30 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { build } = require('../package.json');
+
+test('instalador offline PTBR preserva dados e nao inicia aplicativo ou jogo', () => {
+  assert.deepEqual(build.win.target, ['portable', 'nsis']);
+  assert.equal(build.nsis.oneClick, false);
+  assert.equal(build.nsis.perMachine, false);
+  assert.equal(build.nsis.allowElevation, false);
+  assert.equal(build.nsis.allowToChangeInstallationDirectory, true);
+  assert.equal(build.nsis.runAfterFinish, false);
+  assert.equal(build.nsis.deleteAppDataOnUninstall, false);
+  assert.equal(build.nsis.packElevateHelper, false);
+  assert.deepEqual(build.nsis.installerLanguages, ['pt_BR']);
+  assert.notEqual(build.nsis.artifactName, build.artifactName);
+  assert.equal(build.nsis.createDesktopShortcut, true);
+  assert.equal(build.nsis.createStartMenuShortcut, true);
+  assert.equal(build.nsis.installerIcon, build.win.icon);
+  assert.equal(build.nsis.uninstallerIcon, build.win.icon);
+  assert.equal(build.appId, 'br.organic.javainjeto.pz');
+  assert.equal(build.productName, 'Java Injeto - PZ');
+  const script = fs.readFileSync(path.resolve(__dirname, '..', build.nsis.include), 'utf8');
+  assert.match(script, /--delete-app-data/);
+  assert.match(script, /customUnWelcomePage/);
+  assert.match(script, /Restaurar backup/);
+  assert.match(script, /isForceCurrentInstall "1"/);
+  assert.doesNotMatch(script, /(?:ExecWait|ExecShell|RMDir|DeleteRegKey|Download|inetc::)/i);
+});

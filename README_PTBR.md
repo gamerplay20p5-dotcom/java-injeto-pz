@@ -8,7 +8,7 @@ O aplicativo não baixa mods nem instala Java global. Baixe e ative os mods norm
 
 ## Passo a Passo
 
-1. Feche o PZ. Execute `Java Injeto.exe`, na raiz desta pasta, ou o portátil em `release/`.
+1. Baixe o **Setup.exe** nas [releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/latest) e conclua o assistente PTBR. Abra **Java Injeto** pelo atalho com o PZ fechado. Para uso portátil, execute `Java Injeto.exe`, na raiz desta pasta, ou o portátil em `release/`.
 2. Clique em **Verificar pastas**. A pasta do jogo deve conter `ProjectZomboid64.json`, `projectzomboid.jar` e `jre64/bin/java.exe`.
 3. Quando necessário, vá a **Configurações > Pastas** e selecione o jogo ou a biblioteca Steam. Use **Adicionar pasta** para mods em uma localização diferente.
 4. Em **Mod JAR** ou **Início**, selecione os componentes. Viewpoint inclui ZombieBuddy automaticamente.
@@ -59,9 +59,11 @@ Redução seletiva lista somente aplicativos permitidos com janela aberta. Cada 
 
 ## Atalho e Executável
 
-O ícone superior **Criar atalho na área de trabalho**, também disponível em Configurações, cria `Java Injeto.lnk` apontando para o portátil atual. **Localizar executável** abre a pasta dele. Se mover o executável, crie o atalho novamente. Não é um atalho para abrir o PZ.
+O instalador cria atalhos no menu Iniciar e na área de trabalho. O ícone superior **Criar atalho na área de trabalho**, também disponível em Configurações, cria `Java Injeto.lnk` apontando para o aplicativo instalado ou o portátil atual. **Localizar executável** abre a pasta dele. Se mover o portátil, crie o atalho novamente. Não é um atalho para abrir o PZ.
 
 O arquivo possui o ícone Duck incorporado. O executável ainda não tem certificado de assinatura Windows; verifique a procedência, não desative antivírus.
+
+Para atualizar a instalação, feche o utilitário e execute o novo Setup. Preferências e backups são mantidos. Para remover, primeiro restaure a injeção e a sessão do Otimizador pelo aplicativo e depois desinstale em **Configurações do Windows > Aplicativos**. AppData é preservado, inclusive cópias Java ainda usadas pelo jogo. [Manual do instalador](docs/INSTALACAO_PTBR.md).
 
 ## Steam e Privacidade
 
@@ -96,10 +98,11 @@ npm run test:agents
 npm run dist
 npm run test:package
 node tools/verify-portable.cjs
+npm run test:installer
 ```
 
 `test:ui` e `test:package` usam jogo e JARs fictícios em diretórios temporários. Não escrevem na instalação real. `test:agents` usa o Java e agentes reais somente em probe `-version`; exige os componentes locais. `npm run dev` é uma prévia visual sem operações nativas.
 
-`npm run dist` gera o portátil em `release/`. Não inclua JARs de autores na distribuição. Feche a versão que será sobrescrita antes de recompilar; uma pasta de saída alternativa evita mexer em um executável aberto.
+`npm run dist` gera instalador offline e portátil em `release/`, publica hashes e copia ambos para a raiz como `Instalar Java Injeto.exe` e `Java Injeto.exe`. Não inclua JARs de autores na distribuição. Feche a versão que será sobrescrita antes de recompilar; uma pasta de saída alternativa evita mexer em um executável aberto.
 
 Leia [Arquitetura](docs/ARQUITETURA_PTBR.md), [Continuidade](docs/CONTINUIDADE_PTBR.md), [Testes](docs/TESTES_PTBR.md) e [Privacidade](docs/PRIVACIDADE_PTBR.md) para manter o projeto. Código MIT; arquivos do jogo e mods não recebem esta licença.

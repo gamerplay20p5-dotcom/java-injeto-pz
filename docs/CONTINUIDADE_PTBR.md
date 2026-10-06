@@ -1,6 +1,6 @@
 # Continuidade do Projeto
 
-## Estado Atual: 0.2.0
+## Estado Atual: 0.2.1
 
 Redesign da árvore existente, não recriação. O Java Injeto agora é exclusivamente um utilitário/injetor: **nunca adicionar novamente um botão ou IPC para abrir o jogo**. Os mods continuam na Workshop; só agentes conhecidos são preparados.
 
@@ -14,7 +14,8 @@ Referência B42.21, Windows x64. Projeto original em `%USERPROFILE%\Desktop\Laun
 - Otimizador nativo C#: hardware, heap recomendado, prioridade, energia clonada, RAM e fechamento seletivo normal.
 - Helper destacado e persistente por hash, sem CMD; fechamento da janela encerra Electron.
 - Ícone Duck em PNG/ICO, recursos do executável e criação de atalho pelo app.
-- 49 regressões, testes C# de energia sem tocar Windows, Electron com instalação fictícia e validação de pacote.
+- Instalador offline NSIS PTBR, instalação por usuário, atalhos Duck, atualização e desinstalação sem excluir AppData.
+- Regressões, testes C# de energia sem tocar Windows, Electron com instalação fictícia e validação de pacote/instalador.
 
 ## Regras de Manutenção
 
@@ -37,11 +38,14 @@ npm run test:ui
 npm run dist
 npm run test:package
 node tools/verify-portable.cjs
+npm run test:installer
 ```
 
 Leia `ARQUITETURA_PTBR.md`, `OTIMIZADOR_PTBR.md`, `TESTES_PTBR.md` e o código dos validadores antes de mudar contratos. Testes UI/pacote usam `tools/test-fixture.cjs`; JARs falsos são somente fixtures, jamais executados. `test:agents` é opcional e usa agentes reais num probe `-version`.
 
-O teste do portátil usa CDP local temporário: o wrapper de extração não oferece o pipe de inspector Node esperado por `_electron.launch`. O modo normal do aplicativo não abre porta de depuração. Ao atualizar a distribuição, substitua também a cópia estável `Java Injeto.exe` da raiz, após fechar a anterior.
+O teste do portátil usa CDP local temporário: o wrapper de extração não oferece o pipe de inspector Node esperado por `_electron.launch`. O modo normal do aplicativo não abre porta de depuração. `npm run dist` mantém as cópias estáveis na raiz e os hashes dos dois arquivos. Feche a cópia anterior antes de recompilar.
+
+`build/installer.nsh` acrescenta explicações e proteção dos dados ao assistente padrão. Não habilitar `deleteAppDataOnUninstall`: os agentes são referenciados por caminho absoluto no jogo. O teste NSIS usa GUID, nome, diretório e perfil separados; nunca instalar silenciosamente a identidade de produção para testar. [Detalhes](INSTALACAO_PTBR.md).
 
 ## Próximos Passos
 
@@ -51,4 +55,4 @@ Testar o monitor em partida real, retirada da tomada, fechamento abrupto do app,
 
 Depois avaliar assinatura Windows, validação criptográfica JAR, limpeza explícita de helpers/cópias antigas sem apagar referências ativas e cadastro de novos agentes homologados. Atualização remota assinada não existe.
 
-Repositório: https://github.com/gamerplay20p5-dotcom/java-injeto-pz. Código MIT. A publicação 0.1.0 tinha outro fluxo; não afirmar que um binário 0.2.0 foi publicado antes de realmente disponibilizá-lo. Não versionar release, JARs, dados locais ou segredos.
+Repositório: https://github.com/gamerplay20p5-dotcom/java-injeto-pz. Código MIT. A publicação 0.1.0 tinha outro fluxo. Não versionar release, JARs, dados locais ou segredos; binários e hashes devem ir aos anexos da release, após validação.

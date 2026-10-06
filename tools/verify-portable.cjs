@@ -17,8 +17,7 @@ async function main() {
     const port = socket.address().port; await new Promise(resolve => socket.close(resolve));
     const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
     // O wrapper portatil nao oferece o pipe Node esperado por _electron.launch.
-    let executable = path.join(root, 'Java Injeto.exe');
-    try { await fs.access(executable); } catch { executable = path.join(root, 'release', `Java-Injeto-PZ-${require('../package.json').version}-Windows.exe`); }
+    const executable = path.join(root, 'release', `Java-Injeto-PZ-${require('../package.json').version}-Windows.exe`);
     child = spawn(executable, [`--remote-debugging-port=${port}`, `--user-data-dir=${fake.data}`], { env, windowsHide: true, shell: false, stdio: 'ignore' });
     await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
     let endpoint;
@@ -32,7 +31,7 @@ async function main() {
     const page = browser.contexts()[0].pages()[0]; await page.getByRole('navigation').waitFor();
     await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 3 && !document.querySelector('.spin'));
     const state = await page.evaluate(() => window.organic.getState());
-    assert.equal(state.game.path, fake.game); assert.equal(state.version, '0.2.0');
+    assert.equal(state.game.path, fake.game); assert.equal(state.version, require('../package.json').version);
     assert.equal(await page.evaluate(() => typeof window.organic.launch), 'undefined');
     await page.getByRole('button', { name: 'Otimizador', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('.hardware')?.textContent.includes('GB') && !document.querySelector('.spin'), { timeout: 30000 });

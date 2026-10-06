@@ -1,19 +1,22 @@
 # Testes e Limitações
 
-## Validação da 0.2.0
+## Validação da 0.2.1
 
 Ambiente de desenvolvimento Windows, 2026-10-05. Nenhuma partida ou login real foi aberto para executar os testes.
 
 | Teste | Escopo |
 | --- | --- |
-| `npm test` | 49 regressões aprovadas: catálogo, caminhos, cópias, OpenID, JSON e C# |
+| `npm test` | 50 regressões aprovadas: catálogo, caminhos, cópias, OpenID, JSON, instalador e C# |
 | `tests/NativeRegression.cs` | Quatro cenários de energia com executor Windows simulado |
 | `npm run test:ui` | Sete abas, três componentes, preparação/injeção/restauração real em pasta fictícia, clipboard, hardware, temas e janelas compactas |
 | `npm run test:package` | Executável empacotado, recursos Duck, auxiliar C#, IPC, sandbox e hash da distribuição |
 | `node tools/verify-portable.cjs` | Portátil real aberto com perfil isolado, interface, hardware C# e encerramento limpo sem abrir PZ |
+| `npm run test:installer` | NSIS real com identidade descartável: instalação, abertura do app instalado, reinstalação, exclusão de AppData bloqueada e desinstalação; sentinelas e dados/atalho de produção preservados |
 | `npm run test:agents` | Probe separado, exige PZ/agentes reais; não homologa uma partida |
 
 Fixtures usam JARs sintéticos e uma configuração cliente descartável. O teste faz a escrita JSON e sua reversão **nessa instalação falsa**, verifica backup byte a byte e nunca executa os JARs falsos. Pacote usa `--user-data-dir` separado. Exclusões são restritas a diretórios temporários próprios.
+
+O teste do instalador muda appId, GUID, nome e pasta apenas no pacote descartável; atalhos de teste são desabilitados. Não instala sobre a identidade de produção. Sentinelas locais de preferências, backup e runtime permanecem após a remoção, e hashes dos dados/atalho reais não mudam. A reinstalação foi testada com a mesma versão; migração futura entre versões exige novo teste. A interface do app instalado foi validada; o assistente gráfico e o SmartScreen em outro computador ainda precisam de conferência manual.
 
 O monitor C# foi compilado e testado aguardando uma pasta sem jogo executado, com energia/prioridade desativadas; duplicação foi recusada, solicitação de parar restaurou o estado e o processo encerrou sozinho. Os quatro cenários de energia cobrem clone/original, troca manual, falha parcial e registro adulterado, sem mudar os planos reais do computador.
 

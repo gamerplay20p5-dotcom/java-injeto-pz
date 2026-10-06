@@ -4,8 +4,9 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
-const { hash, within } = require('../src/main/files.cjs');
+const { within } = require('../src/main/files.cjs');
 const { fixture } = require('./test-fixture.cjs');
+const { checksums } = require('./publish-local-artifacts.cjs');
 const root = path.resolve(__dirname, '..');
 
 async function main() {
@@ -55,7 +56,7 @@ async function main() {
   }
   const stats = await fs.stat(portable);
   assert(stats.size > 10 * 1024 * 1024);
-  await fs.writeFile(path.join(release, 'SHA256SUMS.txt'), `${await hash(portable)}  ${path.basename(portable)}\n`);
+  await checksums(release);
   console.log(`PASS: pacote Windows (${Math.round(stats.size / 1024 / 1024)} MiB), janela/IPC reais, isolamento ativo e nenhum arquivo de mod embutido.`);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

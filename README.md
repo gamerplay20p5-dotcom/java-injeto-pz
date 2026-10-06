@@ -8,10 +8,18 @@ Utilitário desktop da Organic / DuckStudio para **revisar JARs, configurar agen
 
 ![Interface compacta do Java Injeto com dados de teste](docs/images/launcher.png)
 
+## Baixar e Instalar
+
+Na [página de downloads](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases/latest), escolha **`Java-Injeto-PZ-0.2.1-Setup.exe`** para instalar ou **`Java-Injeto-PZ-0.2.1-Windows.exe`** para usar sem instalação.
+
+O instalador inclui o aplicativo completo, sem baixar outros arquivos. O assistente é em PTBR, instala para sua conta, permite escolher a pasta e cria atalhos com o ícone Duck. Não precisa de Node.js nem de Java global. Não instala mods, não altera o PZ e não abre o jogo ou o aplicativo automaticamente.
+
+Para desinstalar, use **Configurações do Windows > Aplicativos > Java Injeto - PZ**. **Desinstalar não desfaz a injeção:** primeiro use **Backup > Restaurar backup** e, se necessário, **Otimizador > Restaurar sessão**. Configurações, agentes e backups em AppData são preservados para não quebrar referências do jogo. [Instalação, atualização e remoção](docs/INSTALACAO_PTBR.md).
+
 ## Fluxo de Uso
 
 1. Instale os mods pela Workshop e feche o PZ.
-2. Abra `Java Injeto.exe` ou o atalho da área de trabalho.
+2. Abra o atalho **Java Injeto** instalado, ou `Java Injeto.exe` na versão portátil.
 3. Use **Verificar pastas**. Em **Configurações**, selecione manualmente o jogo, a Steam ou pastas adicionais de mods quando necessário.
 4. Selecione componentes, use **Revisar JAR**, confira origem, SHA-256 e manifesto, e autorize a preparação.
 5. Clique em **Injetar agora**. Confira destinos e backup antes de confirmar.
@@ -58,18 +66,19 @@ npm run dist
 npm run test:package
 ```
 
-`npm start` compila o auxiliar e a interface. O portátil fica em `release/Java-Injeto-PZ-0.2.0-Windows.exe`; uma cópia estável chamada `Java Injeto.exe` pode ser mantida na raiz para facilitar o atalho. O botão **Localizar executável** abre sua pasta, e **Criar atalho** usa o ícone Duck incorporado no arquivo.
+`npm start` compila o auxiliar e a interface. `npm run dist` gera o instalador e o portátil em `release/`, com hashes em `SHA256SUMS.txt`, e mantém cópias fáceis de achar na raiz: **`Instalar Java Injeto.exe`** e **`Java Injeto.exe`**. O botão **Localizar executável** abre sua pasta, e **Criar atalho** usa o ícone Duck incorporado no arquivo.
 
-A versão `0.2.0` é o utilitário desta árvore de código. A antiga `0.1.0` publicada era um launcher e tem outro funcionamento. Consulte as [releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases) para conferir o que efetivamente foi publicado. O executável não tem certificado de assinatura: não desative antivírus; confira procedência e `SHA256SUMS.txt`.
+A versão `0.2.1` acrescenta instalação ao utilitário 0.2. A antiga `0.1.0` publicada era um launcher e tem outro funcionamento. Consulte as [releases](https://github.com/gamerplay20p5-dotcom/java-injeto-pz/releases) para conferir os arquivos publicados. O executável não tem certificado de assinatura: não desative antivírus; confira procedência e `SHA256SUMS.txt`.
 
 ## Testes e Documentação
 
 | Comando | Cobertura |
 | --- | --- |
-| `npm test` | 49 regressões, incluindo injeção/restauração e auxiliar C#; energia testada com executor simulado |
+| `npm test` | Regressões de injeção/restauração, instalador e auxiliar C#; energia testada com executor simulado |
 | `npm run test:ui` | Electron real, sete abas, preparação/injeção/backup em instalação fictícia, hardware, temas e dimensões compactas |
 | `npm run test:package` | Pacote Windows, recursos Duck, auxiliar C#, IPC, isolamento e hash do portátil |
 | `node tools/verify-portable.cjs` | Abertura/encerramento do portátil real com perfil fictício e detecção C# |
+| `npm run test:installer` | Instalação, atualização, app instalado e desinstalação NSIS com identidade isolada; dados preservados |
 | `npm run test:agents` | Agentes reais e Java do PZ em probe `-version`; não abre uma partida |
 
 Testes automatizados não homologam uma partida SP/MP, VOIP, anticheat ou ganhos de FPS.
